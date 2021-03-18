@@ -1,3 +1,4 @@
+from memoryPyTorch import MemoryDNN
 
 
 def bisection(h,g,BEnergy,AoI,M):
@@ -63,6 +64,7 @@ def bisection(h,g,BEnergy,AoI,M):
     return LyapnovDrift,BEnergy_k,AoI_k
 
 
+'''
 if __name__ == "__main__":
     h =([6.06020304235508 * 10 ** -6, 1.10331933767028 * 10 ** -5, 1.00213540309998 * 10 ** -7,1.21610610942759 * 10 ** -6])
     g =([6.06020304235508 * 10 ** -6, 1.10331933767028 * 10 ** -5, 1.00213540309998 * 10 ** -7,1.21610610942759 * 10 ** -6])
@@ -71,3 +73,14 @@ if __name__ == "__main__":
     AoI=([1,1,1,1])
     a = bisection(h,g,BEnergy,AoI,M)
     print(a)
+'''
+if __name__ == "__main__":
+    N=10;Memory = 1024
+    mem = MemoryDNN(net = [N, 120, 80, N],
+                    learning_rate = 0.01,
+                    training_interval=10,
+                    batch_size=128,
+                    memory_size=Memory
+                    )
+    mlist=mem.decode(mem,5)
+    print(mlist)

@@ -161,3 +161,4 @@ class MemoryDNN:
         plt.xlabel('Time Frames')
         plt.show()
 
+
