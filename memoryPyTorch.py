@@ -58,22 +58,27 @@ class MemoryDNN:
                 nn.Sigmoid()
         )
 
-    def remember(self, h, m):
+    def remember(self, h,g,BEnergy,AoI, m):
+
+
         # replace the old memory with new memory
+
         idx = self.memory_counter % self.memory_size
-        self.memory[idx, :] = np.hstack((h, m))
-
-        self.memory_counter += 1
-
-    def encode(self, h, m):
+        try:
+            self.memory[idx, :] = np.hstack((h,g,BEnergy,AoI, m))
+            self.memory_counter += 1
+        except Exception:
+            print(self.memory_counter)
+    def encode(self, h, g,BEnergy,AoI,m):
         # encoding the entry
-        self.remember(h, m)
+        self.remember(h,g,BEnergy,AoI, m)
         # train the DNN every 10 step
 #        if self.memory_counter> self.memory_size / 2 and self.memory_counter % self.training_interval == 0:
         if self.memory_counter % self.training_interval == 0:
             self.learn()
 
     def learn(self):
+
         # sample batch memory from all memory
         if self.memory_counter > self.memory_size:
             sample_index = np.random.choice(self.memory_size, size=self.batch_size)

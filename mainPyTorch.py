@@ -71,7 +71,7 @@ if __name__ == "__main__":
     '''
 
     N = 5                       # number of users
-    n = 30000                    # number of time frames
+    n = 3000000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
@@ -104,7 +104,7 @@ if __name__ == "__main__":
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
 
-    mem = MemoryDNN(net = [N, 120, 80, N],
+    mem = MemoryDNN(net = [4*N, 120, 80, N],
                     learning_rate = 0.01,
                     training_interval=10,
                     batch_size=128,
@@ -149,7 +149,7 @@ if __name__ == "__main__":
             r_list.append(bisection(h/1000000,g/1000000,BEnergy,AoI, m)[0])
 
         # encode the mode with largest reward
-        mem.encode(h, m_list[np.argmax(r_list)])
+        mem.encode(h,g,BEnergy,AoI, m_list[np.argmax(r_list)])
         # the main code for DROO training ends here
 
 

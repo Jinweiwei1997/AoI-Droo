@@ -38,7 +38,7 @@ def bisection(h,g,BEnergy,AoI,M):
             if(BEnergy_k[i]>EnergyTrans):
                 BEnergy_k[i] -=EnergyTrans
             else:
-                return 1000000;
+                return 1000000.01,BEnergy;
             break
     if flat==1:
         #the model is H
