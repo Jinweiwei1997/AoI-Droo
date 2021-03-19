@@ -6,7 +6,7 @@ def bisection(h,g,BEnergy,AoI,M):
     V=1 #Lyapnov drift value
     flat=1 #define H or T
     AoI_k=[x for x in AoI] #k slot AoI
-    Amax=4
+    Amax=6
     Bmax=0.0004
     sigma=3.162277660168375*10**(-13)
     S=12

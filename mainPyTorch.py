@@ -28,8 +28,9 @@
 
 import scipy.io as sio                     # import scipy.io for .mat file I/
 import numpy as np                         # import numpy
+import mat4py
 
-# Implementated based on the PyTorch 
+# Implementated based on the PyTorch
 from memoryPyTorch import MemoryDNN
 from bisection import bisection
 
@@ -69,7 +70,7 @@ if __name__ == "__main__":
         Adaptive K is implemented. K = max(K, K_his[-memory_size])
     '''
 
-    N = 10                       # number of users
+    N = 5                       # number of users
     n = 30000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
@@ -78,12 +79,23 @@ if __name__ == "__main__":
 
     print('#user = %d, #channel=%d, K=%d, decoder = %s, Memory = %d, Delta = %d'%(N,n,K,decoder_mode, Memory, Delta))
     # Load data
-    channel = sio.loadmat('./data/data_%d' %N)['input_h']
+    data = sio.loadmat('./data/data_%d' %N)
+    #channel_h = data['input_h']
+    #channel_g = sio.loadmat('./data/data_%d' %N)['input_g']
+    BEnergy = sio.loadmat('./data/data_%d' %N)['input_battery']
+    AoI = sio.loadmat('./data/data_%d' %N)['input_aoi']
     rate = sio.loadmat('./data/data_%d' %N)['output_obj'] # this rate is only used to plot figures; never used to train DROO.
+    '''
 
+    channel_h = data["input_h"]
+    channel_g = data['input_g']
+    BEnergy = data['input_battery']
+    AoI = data['input_aoi']
+    '''
     # increase h to close to 1 for better training; it is a trick widely adopted in deep learning
-    channel = channel * 1000000
-
+    channel_h = channel_h * 1000000
+    channel_g = channel_g * 1000000
+    channel = [x for x in channel_h]
     # generate the train and test data sample index
     # data are splitted as 80:20
     # training data are randomly sampled with duplication if n > total data size
@@ -124,14 +136,15 @@ if __name__ == "__main__":
             # test
             i_idx = i - n + num_test + split_idx
 
-        h = channel[i_idx,:]
+        h = channel_h[i_idx,:]
+        g = channel_g[i_idx,:]
 
         # the action selection must be either 'OP' or 'KNN'
         m_list = mem.decode(h, K, decoder_mode)
 
         r_list = []
         for m in m_list:
-            r_list.append(bisection(h/1000000, m)[0])
+            r_list.append(bisection(h/1000000,g/1000000,BEnergy,AoI, m)[0])
 
         # encode the mode with largest reward
         mem.encode(h, m_list[np.argmax(r_list)])
