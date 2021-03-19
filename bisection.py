@@ -45,7 +45,8 @@ def bisection(h,g,BEnergy,AoI,M):
         for i in range(len(M)):
             #calculate the Energy Harvested
             EnergyHarvest[i]= eta*P*g[i]
-            if BEnergy_k[i]+EnergyHarvest[i]>=Bmax:
+            B_next=BEnergy_k[i] + EnergyHarvest[i]
+            if B_next>=Bmax:
                 BEnergy_k[i]=Bmax
             else:
                 BEnergy_k[i] += EnergyHarvest[i]

@@ -80,10 +80,10 @@ if __name__ == "__main__":
     print('#user = %d, #channel=%d, K=%d, decoder = %s, Memory = %d, Delta = %d'%(N,n,K,decoder_mode, Memory, Delta))
     # Load data
     data = sio.loadmat('./data/data_%d' %N)
-    #channel_h = data['input_h']
-    #channel_g = sio.loadmat('./data/data_%d' %N)['input_g']
-    BEnergy = sio.loadmat('./data/data_%d' %N)['input_battery']
-    AoI = sio.loadmat('./data/data_%d' %N)['input_aoi']
+    channel_h = data['input_h']
+    channel_g = sio.loadmat('./data/data_%d' %N)['input_g']
+    NodeBEnergy = sio.loadmat('./data/data_%d' %N)['input_battery']
+    ProcessAoI = sio.loadmat('./data/data_%d' %N)['input_aoi']
     rate = sio.loadmat('./data/data_%d' %N)['output_obj'] # this rate is only used to plot figures; never used to train DROO.
     '''
 
@@ -138,6 +138,8 @@ if __name__ == "__main__":
 
         h = channel_h[i_idx,:]
         g = channel_g[i_idx,:]
+        AoI = ProcessAoI[i_idx,:]
+        BEnergy = NodeBEnergy[i_idx,:]
 
         # the action selection must be either 'OP' or 'KNN'
         m_list = mem.decode(h, K, decoder_mode)
