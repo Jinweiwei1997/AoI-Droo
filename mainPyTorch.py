@@ -49,9 +49,9 @@ def plot_rate(rate_his, rolling_intv=50):
 
     mpl.style.use('seaborn')
     fig, ax = plt.subplots(figsize=(15, 8))
-#    rolling_intv = 20
+    #rolling_intv = 20
 
-    plt.plot(np.arange(len(rate_array))+1, df.rolling(rolling_intv, min_periods=1).mean(), 'b')
+    plt.plot(np.arange(len(rate_array))+1, df.rolling(rolling_intv, min_periods=1).mean().values, 'b')
     plt.fill_between(np.arange(len(rate_array))+1, df.rolling(rolling_intv, min_periods=1).min()[0], df.rolling(rolling_intv, min_periods=1).max()[0], color = 'b', alpha = 0.2)
     plt.ylabel('Normalized Computation Rate')
     plt.xlabel('Time Frames')
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     '''
 
     N = 5                       # number of users
-    n = 3000000                    # number of time frames
+    n = 40000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure

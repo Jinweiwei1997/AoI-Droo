@@ -62,7 +62,7 @@ def bisection(h,g,BEnergy,AoI,M):
     for i in range(len(M)):
         LyaBEnergy += (BEnergy_k[i]-BEnergy[i])*(BEnergy_k[i]-BEnergy[i])+AverSumAoI
     LyapnovDrift = LyaBEnergy + AverSumAoI
-    return LyapnovDrift,BEnergy_k,AoI_k
+    return -LyapnovDrift,BEnergy_k,AoI_k
 
 
 '''
