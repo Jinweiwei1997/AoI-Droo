@@ -15,6 +15,7 @@ import torch.optim as optim
 import torch.nn as nn
 import numpy as np
 
+
 print(torch.__version__)
 
 
@@ -57,7 +58,7 @@ class MemoryDNN:
                 nn.Linear(self.net[1], self.net[2]),
                 nn.ReLU(),
                 nn.Linear(self.net[2], self.net[3]),
-                nn.Softmax(),
+                nn.Sigmoid(),
         )
 
     def remember(self, h,g,BEnergy,AoI, m):
@@ -66,11 +67,10 @@ class MemoryDNN:
         # replace the old memory with new memory
 
         idx = self.memory_counter % self.memory_size
-        try:
-            self.memory[idx, :] = np.hstack((h,g,BEnergy,AoI, m))
-            self.memory_counter += 1
-        except Exception:
-            print(self.memory_counter)
+        self.memory[idx, :] = np.hstack((h,g,BEnergy,AoI, m))
+        self.memory_counter += 1
+
+
     def encode(self, h, g,BEnergy,AoI,m):
         # encoding the entry
         self.remember(h,g,BEnergy,AoI, m)
@@ -106,17 +106,16 @@ class MemoryDNN:
         self.cost = loss.item()
         assert(self.cost > 0)
         self.cost_his.append(self.cost)
-        if(self.memory_counter > 30000 and (self.memory_counter-290000)%128==0):
+        if(self.memory_counter > 30000 and (self.memory_counter-30000)%128==0):
             train_acc = 0
             for x in range(128):
                 flat = 0
                 train_correct = 0
-                for j in range(5):
-                    if predict[x,j]!=m_train[x,j]:
-                        flat=1
-                if flat == 0:
+
+                if torch.Tensor.argmax((predict[x, :]))==np.argmax(m_train[x, :]):
+
                     train_correct = 1
-                train_acc += train_correct
+                    train_acc += train_correct
             print("准确率",train_acc/128)
     def decode(self, h, k , mode = 'OP'):
         '''
@@ -136,9 +135,14 @@ class MemoryDNN:
 
         #遍历所有的动作，因为设定的动作至多又一个1
         m_list=[]
-        m_list.append([0 for x in range(k)])
-        for i in range(k):
-            m_index=[0 if i!=j else 1 for j in range(k)]   #to find an action
+
+        for i in range(k+1):
+            m_index = []
+            for j in range(k+1):
+                if(i==j):
+                    m_index.append(1)
+                else:
+                    m_index.append(0)
             m_list.append(m_index)
         return  m_list
     '''def knm(self, m, k = 1):

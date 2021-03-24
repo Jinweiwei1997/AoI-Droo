@@ -73,7 +73,7 @@ if __name__ == "__main__":
     '''
 
     N = 5                       # number of users
-    n = 40000                  # number of time frames
+    n = 80000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
@@ -97,6 +97,7 @@ if __name__ == "__main__":
     # increase h to close to 1 for better training; it is a trick widely adopted in deep learning
     channel_h = channel_h * 1000000
     channel_g = channel_g * 1000000
+    Energy = NodeBEnergy*1000
     channel = [x for x in channel_h]
     # generate the train and test data sample index
     # data are splitted as 80:20
@@ -106,7 +107,7 @@ if __name__ == "__main__":
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
     Action =[]
-    mem = MemoryDNN(net = [4*N, 120, 80, N],
+    mem = MemoryDNN(net = [4*N, 120, 80, N+1],
                     learning_rate = 0.01,
                     training_interval=10,
                     batch_size=128,
@@ -141,14 +142,14 @@ if __name__ == "__main__":
         h = channel_h[i_idx,:]
         g = channel_g[i_idx,:]
         AoI = ProcessAoI[i_idx,:]
-        BEnergy = NodeBEnergy[i_idx,:]
+        BEnergy = Energy[i_idx,:]
 
         # the action selection must be either 'OP' or 'KNN'
-        m_list = mem.decode(h, K, decoder_mode)
+        m_list = mem.decode(h, N, decoder_mode)
 
         r_list = []
         for m in m_list:
-            r_list.append(bisection(h/1000000,g/1000000,BEnergy,AoI, m)[0])
+            r_list.append(bisection(h/1000000,g/1000000,BEnergy/1000,AoI, m)[0])
 
         # encode the mode with largest reward
         mem.encode(h,g,BEnergy,AoI, m_list[np.argmax(r_list)])
@@ -186,7 +187,7 @@ if __name__ == "__main__":
     AoI_t=[1,1,1,1,1]
     BEnergy_t = NodeBEnergy[1, :]
 
-    Amax = 20
+    Amax = 6
     Bmax = 0.0004
     sigma = 3.162277660168375 * 10 ** (-13)
     S = 12
@@ -196,35 +197,38 @@ if __name__ == "__main__":
     FinalAoI=0
     for i in range(100):
         AverSumAoI = 0
-        h_t = channel_h[i, :]/1000000
-        g_t = channel_g[i, :]/1000000
-        predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,BEnergy_t,AoI_t))))
+        h_t = channel_h[i, :]
+        g_t = channel_g[i, :]
+        predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,BEnergy_t*1000,AoI_t))))
         ac += 1
         flat = 0
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
-        for j in range(N):
-            if predict[j]== 1:
-                flat = 1
-                AoI_t[j]= 1
-                EnergyTrans = sigma / h[j] * (2 ** S)
-                if EnergyTrans > BEnergy_t[j] :
-                    print("传输能量比现有的能量高")
-                BEnergy_t -= EnergyTrans
+        maxj=torch.Tensor.argmax(predict)
+        for j in range(N+1):
+            if maxj==0:
+                for j in range(N):
+                    EnergyHarvest[j] = eta * P * g_t[j]/1000000
                 for k in range(N):
-                    if k != j and AoI_t[k] <Amax:
-                       AoI_t[k] += 1
-                break
-        if flat==0:
-            for j in range(N):
-                EnergyHarvest[j] = eta * P * g[j]
-            for k in range(N):
-                if AoI_t[k]<Amax:
-                    AoI_t[k] +=1
-            for j in range(N):
-                if EnergyHarvest[j]+BEnergy_t[j] < Bmax :
-                    BEnergy_t[j] += EnergyHarvest[j]
-                else:
-                    BEnergy_t[j] = Bmax
+                    if AoI_t[k] < Amax:
+                        AoI_t[k] += 1
+                for j in range(N):
+                    if EnergyHarvest[j] + BEnergy_t[j] < Bmax:
+                        BEnergy_t[j] += EnergyHarvest[j]
+                    else:
+                        BEnergy_t[j] = Bmax
+            else:
+                if j == maxj:
+                    flat = 1
+                    AoI_t[j-1] = 1
+                    EnergyTrans = sigma / h_t[j-1] * (2 ** S)
+                    if EnergyTrans > BEnergy_t[j-1]:
+                        print("传输能量比现有的能量高")
+                    BEnergy_t -= EnergyTrans
+                    for k in range(N):
+                        if k != j and AoI_t[k] < Amax:
+                            AoI_t[k] += 1
+                    break
+
         for j in range(N):
             AverSumAoI +=AoI_t[j]
         AverSumAoI /= N

@@ -15,7 +15,7 @@ if __name__ == "__main__":
     V = 1   # Lyapnov drift value
     flat = 1  # define H or T
     AoI_k = [x for x in AoI]  # k slot AoI
-    Amax = 20
+    Amax = 6
     Bmax = 0.0004
     sigma = 3.162277660168375 * 10 ** (-13)
     S = 12
@@ -25,6 +25,7 @@ if __name__ == "__main__":
     P = 5.012
     LyaBEnergy = 0  # calculate Battery Energy changed
     index = []
+    AoI_index=[]
     for i in range(n):
         AverSumAoI = 0  # Sum of AoI at base station
         EnergyTrans = [0 for j in range(N)]
@@ -60,5 +61,6 @@ if __name__ == "__main__":
         AverSumAoI /= N
         FinalAoI = (FinalAoI*i +AverSumAoI)/(i+1)
         index.append(FinalAoI)
+        AoI_index.append(AoI)
         save_to_txt(index,"index")
     print(FinalAoI)

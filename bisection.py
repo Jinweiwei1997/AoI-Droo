@@ -6,7 +6,7 @@ def bisection(h,g,BEnergy,AoI,M):
     V=1 #Lyapnov drift value
     flat=1 #define H or T
     AoI_k=[x for x in AoI] #k slot AoI
-    Amax=20
+    Amax=6
     Bmax=0.0004
     sigma=3.162277660168375*10**(-13)
     S=12
@@ -14,56 +14,60 @@ def bisection(h,g,BEnergy,AoI,M):
     theta =[] #never used 权重
     eta = 0.5 #gain loss
     P = 5.012
-    EnergyHarvest = [0 for i in range(len(M))] #amount of energy harvest
+
+    EnergyHarvest = [0 for i in range(len(M)-1)] #amount of energy harvest
     BEnergy_k = [x for x in BEnergy]
     LyaBEnergy = 0 #calculate Battery Energy changed
-
+    B_Lya2 = 0
     for i in range(len(M)):
-        if (M[i]==1):
-            #the model is T
-            flat=0
-            for j in range(len(M)):
-                if(i!=j):
-                    if AoI_k[j] < Amax:
-                        AoI_k[j] = AoI[j]+1
-                    else:
-                        AoI_k[j] = Amax
+        if M[0] == 1:
+            # the model is H
+            for j in range(len(M) - 1):
+                # calculate the Energy Harvested
+                EnergyHarvest[j] = eta * P * g[j]
+                B_next = BEnergy_k[j] + EnergyHarvest[j]
+                if B_next >= Bmax:
+                    BEnergy_k[j] = Bmax
                 else:
-                    AoI_k[j]=1
-            #calcuate Sum of AoI
-            for j in range(len(M)):
+                    BEnergy_k[j] += EnergyHarvest[j]
+                # calculate the Sum of AoI
+            for j in range(len(M) - 1):
+                if (AoI[j] < Amax):
+                    AoI_k[j] = AoI[j] + 1
+                else:
+                    AoI_k[j] = Amax
+            for j in range(len(M) - 1):
                 AverSumAoI += AoI_k[j]
-            AverSumAoI /= len(M)
-            #calculate the Energy for transaction
-            EnergyTrans = sigma/h[i]*(2**S)
-            if(BEnergy_k[i]>EnergyTrans):
-                BEnergy_k[i] -=EnergyTrans
-            else:
-                return 1000000.01,BEnergy;
+            AverSumAoI /= (len(M) - 1)
             break
-    if flat==1:
-        #the model is H
-        for i in range(len(M)):
-            #calculate the Energy Harvested
-            EnergyHarvest[i]= eta*P*g[i]
-            B_next=BEnergy_k[i] + EnergyHarvest[i]
-            if B_next>=Bmax:
-                BEnergy_k[i]=Bmax
-            else:
-                BEnergy_k[i] += EnergyHarvest[i]
-            #calculate the Sum of AoI
-        for i in range(len(M)):
-            if(AoI[i] < Amax):
-                AoI_k[i] = AoI[i]+1
-            else:
-                AoI_k[i]=Amax
-        for i in range(len(M)):
-            AverSumAoI += AoI_k[i]
-        AverSumAoI /= len(M)
-    for i in range(len(M)):
-        LyaBEnergy += (BEnergy_k[i]-BEnergy[i])*(BEnergy_k[i]-BEnergy[i])+AverSumAoI
-    LyapnovDrift = LyaBEnergy + AverSumAoI
-    return -LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
+        else:
+            if(M[i]==1 ):
+                for j in range(len(M) - 1):
+                    if ((i - 1) != j):
+                        if AoI_k[j] < Amax:
+                            AoI_k[j] = AoI[j] + 1
+                        else:
+                            AoI_k[j] = Amax
+                    else:
+                        AoI_k[j] = 1
+                # calcuate Sum of AoI
+                for j in range(len(M) - 1):
+                    AverSumAoI += AoI_k[j]
+                AverSumAoI /= (len(M) - 1)
+                # calculate the Energy for transaction
+                EnergyTrans = sigma / h[i - 1] * (2 ** S)
+                if (BEnergy_k[i - 1] > EnergyTrans):
+                    BEnergy_k[i - 1] -= EnergyTrans
+                else:
+                    return -1000000.01, BEnergy;
+                break
+
+
+    for i in range(len(M)-1):
+        LyaBEnergy += (BEnergy_k[i]-BEnergy[i])*(BEnergy_k[i]-BEnergy[i])
+        B_Lya2 += BEnergy_k[i]*BEnergy_k[i]
+    LyapnovDrift = -LyaBEnergy - AverSumAoI
+    return LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
 
 
 '''
