@@ -3,6 +3,23 @@ import numpy as np
 
 from mainPyTorch import save_to_txt
 
+def plot_rate(rate_his, rolling_intv=50):
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import matplotlib as mpl
+
+    rate_array = np.asarray(rate_his)
+    df = pd.DataFrame(rate_his)
+
+
+    mpl.style.use('seaborn')
+    fig, ax = plt.subplots(figsize=(15, 8))
+    #rolling_intv = 20
+
+    plt.plot(np.arange(len(rate_array))+1, df.rolling(rolling_intv, min_periods=1).mean().values, 'b')
+    plt.ylabel('Averagy Sum AoI')
+    plt.xlabel('Time Frames')
+    plt.show()
 if __name__ == "__main__":
     N = 5
     n=100 #time slots
@@ -14,7 +31,6 @@ if __name__ == "__main__":
     AoI = [1, 1, 1, 1, 1]
     V = 1   # Lyapnov drift value
     flat = 1  # define H or T
-    AoI_k = [x for x in AoI]  # k slot AoI
     Amax = 6
     Bmax = 0.0004
     sigma = 3.162277660168375 * 10 ** (-13)
@@ -26,6 +42,7 @@ if __name__ == "__main__":
     LyaBEnergy = 0  # calculate Battery Energy changed
     index = []
     AoI_index=[]
+    BEnergy_index=[]
     for i in range(n):
         AverSumAoI = 0  # Sum of AoI at base station
         EnergyTrans = [0 for j in range(N)]
@@ -61,6 +78,10 @@ if __name__ == "__main__":
         AverSumAoI /= N
         FinalAoI = (FinalAoI*i +AverSumAoI)/(i+1)
         index.append(FinalAoI)
-        AoI_index.append(AoI)
+        AoI_index.append([i for i in AoI])
+        BEnergy_index.append([i for i in BEnergy])
         save_to_txt(index,"index")
+        save_to_txt(AoI_index,"AoI_index")
+        save_to_txt(BEnergy_index,"BEnergy_index")
+        plot_rate(index,20)
     print(FinalAoI)
