@@ -31,6 +31,8 @@ import numpy as np                         # import numpy
 import mat4py
 
 # Implementated based on the PyTorch
+import torch
+
 from memoryPyTorch import MemoryDNN
 from bisection import bisection
 
@@ -71,7 +73,7 @@ if __name__ == "__main__":
     '''
 
     N = 5                       # number of users
-    n = 40000                    # number of time frames
+    n = 40000                  # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
@@ -103,7 +105,7 @@ if __name__ == "__main__":
     split_idx = int(.8 * len(channel))
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
-
+    Action =[]
     mem = MemoryDNN(net = [4*N, 120, 80, N],
                     learning_rate = 0.01,
                     training_interval=10,
@@ -151,7 +153,7 @@ if __name__ == "__main__":
         # encode the mode with largest reward
         mem.encode(h,g,BEnergy,AoI, m_list[np.argmax(r_list)])
         # the main code for DROO training ends here
-
+        count = 0 #start the calculate AverageAoI
 
 
 
@@ -164,15 +166,13 @@ if __name__ == "__main__":
         # record K in case of adaptive K
         K_his.append(K)
         mode_his.append(m_list[np.argmax(r_list)])
-
-
-    total_time=time.time()-start_time
+    total_time = time.time() - start_time
     mem.plot_cost()
     plot_rate(rate_his_ratio)
 
-    print("Averaged normalized computation rate:", sum(rate_his_ratio[-num_test: -1])/num_test)
-    print('Total time consumed:%s'%total_time)
-    print('Average time per channel:%s'%(total_time/n))
+    print("Averaged normalized computation rate:", sum(rate_his_ratio[-num_test: -1]) / num_test)
+    print('Total time consumed:%s' % total_time)
+    print('Average time per channel:%s' % (total_time / n))
 
     # save data into txt
     save_to_txt(k_idx_his, "k_idx_his.txt")
@@ -180,3 +180,53 @@ if __name__ == "__main__":
     save_to_txt(mem.cost_his, "cost_his.txt")
     save_to_txt(rate_his_ratio, "rate_his_ratio.txt")
     save_to_txt(mode_his, "mode_his.txt")
+
+    #####start test
+    ac = 0
+    AoI_t=[1,1,1,1,1]
+    BEnergy_t = NodeBEnergy[1, :]
+
+    Amax = 20
+    Bmax = 0.0004
+    sigma = 3.162277660168375 * 10 ** (-13)
+    S = 12
+    theta = []  # never used 权重
+    eta = 0.5  # gain loss
+    P = 5.012
+    FinalAoI=0
+    for i in range(100):
+        AverSumAoI = 0
+        h_t = channel_h[i, :]/1000000
+        g_t = channel_g[i, :]/1000000
+        predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,BEnergy_t,AoI_t))))
+        ac += 1
+        flat = 0
+        EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
+        for j in range(N):
+            if predict[j]== 1:
+                flat = 1
+                AoI_t[j]= 1
+                EnergyTrans = sigma / h[j] * (2 ** S)
+                if EnergyTrans > BEnergy_t[j] :
+                    print("传输能量比现有的能量高")
+                BEnergy_t -= EnergyTrans
+                for k in range(N):
+                    if k != j and AoI_t[k] <Amax:
+                       AoI_t[k] += 1
+                break
+        if flat==0:
+            for j in range(N):
+                EnergyHarvest[j] = eta * P * g[j]
+            for k in range(N):
+                if AoI_t[k]<Amax:
+                    AoI_t[k] +=1
+            for j in range(N):
+                if EnergyHarvest[j]+BEnergy_t[j] < Bmax :
+                    BEnergy_t[j] += EnergyHarvest[j]
+                else:
+                    BEnergy_t[j] = Bmax
+        for j in range(N):
+            AverSumAoI +=AoI_t[j]
+        AverSumAoI /= N
+        FinalAoI = (FinalAoI *i +AverSumAoI)/(i+1)
+    print("Aoi:",FinalAoI)

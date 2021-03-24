@@ -6,7 +6,7 @@ def bisection(h,g,BEnergy,AoI,M):
     V=1 #Lyapnov drift value
     flat=1 #define H or T
     AoI_k=[x for x in AoI] #k slot AoI
-    Amax=6
+    Amax=20
     Bmax=0.0004
     sigma=3.162277660168375*10**(-13)
     S=12
@@ -17,6 +17,7 @@ def bisection(h,g,BEnergy,AoI,M):
     EnergyHarvest = [0 for i in range(len(M))] #amount of energy harvest
     BEnergy_k = [x for x in BEnergy]
     LyaBEnergy = 0 #calculate Battery Energy changed
+
     for i in range(len(M)):
         if (M[i]==1):
             #the model is T
@@ -62,7 +63,7 @@ def bisection(h,g,BEnergy,AoI,M):
     for i in range(len(M)):
         LyaBEnergy += (BEnergy_k[i]-BEnergy[i])*(BEnergy_k[i]-BEnergy[i])+AverSumAoI
     LyapnovDrift = LyaBEnergy + AverSumAoI
-    return -LyapnovDrift,BEnergy_k,AoI_k
+    return -LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
 
 
 '''
