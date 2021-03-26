@@ -174,7 +174,7 @@ class Maze(gym.Env):
         for i in range(5):
             if next_state[2,i] <0:
                 done = False
-                reward = 100000
+                reward = -100000
                 flat = 1
                 break
         if flat == 0:
@@ -184,7 +184,7 @@ class Maze(gym.Env):
             done = True
         self.state = next_state
         self.counts += 1
-        return self.state, reward, done
+        return self.state, -reward, done
 
     # 用于在每轮开始之前重置智能体的状态，把环境恢复到最开始
     def reset(self, startstate=None):

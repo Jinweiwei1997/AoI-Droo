@@ -47,8 +47,8 @@ if __name__ == "__main__":
         AverSumAoI = 0  # Sum of AoI at base station
         EnergyTrans = [0 for j in range(N)]
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
-        h = channel_h[n, :]
-        g = channel_g[n, :]
+        h = channel_h[i, :]
+        g = channel_g[i, :]
         for j in range(N):
             EnergyHarvest[j] = eta * P * g[j]
             EnergyTrans[j] = sigma/h[j]*(2**S)
