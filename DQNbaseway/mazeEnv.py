@@ -21,14 +21,14 @@ class Maze(gym.Env):
     # 环境中会用的全局变量可以声明为类（self.）的变量
     def __init__(self):
         self.action_space = spaces.Discrete(6)  # 0全体吸收能量，1-5分别为几个节点吸收能量
-        self.observation_space = spaces.Box(np.array(([0, 0, 0, 1]*5)), np.array(([4, 4, 3, 4]*5)), dtype=np.int)
+        self.observation_space = spaces.Box(np.array([0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1]),\
+                                            np.array(([4, 4, 3, 6,4, 4, 3, 6,4, 4, 3, 6,4, 4, 3, 6,4, 4, 3, 6])), dtype=np.int)
         self.n_actions = self.action_space.n
         self.n_states = self.observation_space.shape[0] # 转态向量维度
         self.state = None
         '''self.target = {(4,2): 50}   # 安全/目标状态
         self.danger = {(2,2): -20, (3,3): -20}  # 危险状态
         '''
-        self.viewer = rendering.Viewer(500, 500, 'maze')
         data = sio.loadmat('./data/data_5')
         channel_h = data['input_h']
         channel_g = sio.loadmat('./data/data_5')['input_g']
@@ -60,13 +60,13 @@ class Maze(gym.Env):
         AoI_now = []
         for i in range(5):  # 五个用户的数据要遍历
             # 四个变量要遍历
-            h_k = h_min + (h_max - h_min) / 5 * self.state[i, 0]
-            g_k = h_min + (h_max - h_min) / 5 * self.state[i, 1]
-            BEnergy_a = B_min + (B_max - B_min) / 4 * self.state[i, 2]
+            h_k = h_min + (h_max - h_min) / 5 * self.state[4*i]
+            g_k = h_min + (h_max - h_min) / 5 * self.state[4*i+1]
+            BEnergy_a = B_min + (B_max - B_min) / 4 * self.state[4*i+2]
             h.append(h_k)
             g.append(g_k)
             BEnergy.append(BEnergy_a)
-            AoI.append(self.state[i, 3])
+            AoI.append(self.state[4*i+3])
         AoI_k = [x for x in AoI]
         BEnergy_k = [x for x in BEnergy]
         if action == 0:  # 吸收能量
@@ -167,14 +167,20 @@ class Maze(gym.Env):
                 BEnergy_now.append(3)
             else:
                 BEnergy_now.append(B_int)
-        next_state = np.array(np.hstack(h_now,g_now,BEnergy_now,AoI_k))
+        next_index=[]
+        for i in range(5):
+            next_index.append(h_now[i])
+            next_index.append(g_now[i])
+            next_index.append(BEnergy_now[i])
+            next_index.append(AoI_k[i])
+        next_state = np.array(next_index)
         flat=0    #标记是否电池过量
         done = False   #默认状态是否不对
         reward = 0     #默认reward=0
         for i in range(5):
-            if next_state[2,i] <0:
+            if next_state[4*i+2] <0:
                 done = False
-                reward = -100000
+                reward = 100000
                 flat = 1
                 break
         if flat == 0:
@@ -192,16 +198,16 @@ class Maze(gym.Env):
         :param startstate: (1,1)
         :return:
         '''
-        if startstate==None:
-            self.state = self.observation_space.sample()
-        else:
-            self.state = startstate
+        #if startstate==None:
+        self.state = self.observation_space.sample()
+        #else:
+         #   self.state = startstate
         self.counts = 0
         return self.state
 
     # metadata、render()、close()是与图像显示有关的，我们不涉及这一部分，感兴趣的同学可以自行编写相关内容。
     # render()绘制可视化环境的部分都写在这里
-    def render(self, mode='human'):
+    '''def render(self, mode='human'):
         # 绘制网格
         for i in range(5):
             # 竖线
@@ -231,43 +237,10 @@ class Maze(gym.Env):
             48, 30, filled=True, color=(1, 1, 0)).add_attr(rendering.Transform(center))
 
         return self.viewer.render(return_rgb_array=mode == 'human')
+'''
 
-    def close(self):
-        if self.viewer:
-            self.viewer.close()
 
-    def drawrectangle(self, point, width, height, **attrs):
-        '''
-        画矩形
-        :param point: 左下角的坐标(480,320)
-        :param width: 横向长度
-        :param height: 竖向长度
-        :param attrs: 其他参数，such as  color=(0,0,255), linewidth=5
-        :return:
-        '''
-        points = [point,
-                  (point[0] + width, point[1]),
-                  (point[0] + width, point[1] + height),
-                  (point[0], point[1] + height)]
-        self.viewer.draw_polygon(points, **attrs)
 
-    def drawrectangle2(self, point, **attrs):
-        '''
-        画一个正多边形
-        :param point: 格点坐标（4，3）
-        :param attrs: 其他参数，such as  color=(0,0,1), linewidth=5
-        :return:
-        '''
-        size = 100
-        center = (50 + point[0] * size - 0.5 * size, 50 + point[1] * size - 0.5 * size)
-        radius = 100 / np.sqrt(2)
-        res = 4
-        points = []
-        for i in range(res):
-            ang = 2 * np.pi * (i - 0.5) / res
-            points.append((np.cos(ang) * radius, np.sin(ang) * radius))
-
-        self.viewer.draw_polygon(points, filled=True, **attrs).add_attr(rendering.Transform(center))
 
 
 if __name__ == '__main__':
@@ -276,11 +249,12 @@ if __name__ == '__main__':
         env.reset()
         while True:
             print(env.state)
-            env.render()
-            # action = env.action_space.sample()
-            # print(action)
-            # env.step(action)
+            #env.render()
+            action = env.action_space.sample()
+            print(action)
+            x=env.step(action)[0]
+            print(x)
 
             time.sleep(0.5)
             break
-    env.close()
+    #env.close()

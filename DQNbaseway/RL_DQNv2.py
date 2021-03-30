@@ -2,7 +2,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from DQNbaseway.mazeEnv import Maze    # 这是一个我自己写的环境
+from mazeEnv import Maze    # 这是一个我自己写的环境
 
 class DQN():
     def __init__(self,
@@ -95,7 +95,7 @@ if __name__ == '__main__':
         s = env.reset()                 # 重置初始状态
         ep_r = 0
         while True:
-            env.render()                # 刷新画面
+            #env.render()                # 刷新画面
             a = dqn.choose_action(s)    # 选择动作
             s_, r, done = env.step(a)   # 执行动作，获得下一个状态s_，回报r，是否结束标记done
             dqn.store_transition(s, a, r, s_)   # 存储 一步 的信息

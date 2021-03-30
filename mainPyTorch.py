@@ -73,7 +73,7 @@ if __name__ == "__main__":
     '''
 
     N = 5                       # number of users
-    n = 80000                    # number of time frames
+    n = 120000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
