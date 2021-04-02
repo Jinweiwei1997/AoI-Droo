@@ -1,3 +1,6 @@
+import math
+import random
+
 import scipy.io as sio
 import numpy as np
 
@@ -16,23 +19,27 @@ def plot_rate(rate_his, rolling_intv=50):
     fig, ax = plt.subplots(figsize=(15, 8))
     #rolling_intv = 20
 
-    plt.plot(np.arange(len(rate_array))+1, df.rolling(rolling_intv, min_periods=1).mean().values, 'b')
+    plt.plot(np.arange(len(rate_array))+1, rate_his)
     plt.ylabel('Averagy Sum AoI')
     plt.xlabel('Time Frames')
     plt.show()
 if __name__ == "__main__":
-    N = 5
+    N = 3
     n=100 #time slots
+    '''
     data = sio.loadmat('./data/data_%d' %N)
     channel_h = data['input_h']
     channel_g = sio.loadmat('./data/data_%d' %N)['input_g']
+    
     NodeBEnergy = sio.loadmat('./data/data_%d' % N)['input_battery']
-    BEnergy = NodeBEnergy[1, :]
+    '''
+    BEnergy = [1*10**-4,2*10-4,3*10-4]
+
     AoI = [1, 1, 1, 1, 1]
     V = 1   # Lyapnov drift value
     flat = 1  # define H or T
-    Amax = 6
-    Bmax = 0.0004
+    Amax = 4
+    Bmax = 0.0003
     sigma = 3.162277660168375 * 10 ** (-13)
     S = 12
     FinalAoI = 0
@@ -47,8 +54,17 @@ if __name__ == "__main__":
         AverSumAoI = 0  # Sum of AoI at base station
         EnergyTrans = [0 for j in range(N)]
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
-        h = channel_h[i, :]
-        g = channel_g[i, :]
+        h=[]
+        g=[]
+        for j in range(N):
+            if i == 0:
+                d = 20
+            if i == 1:
+                d = 25
+            if i == 2:
+                d = 40
+            h.append(0.2*random.expovariate(1) /d/d)
+            g.append(0.2*random.expovariate(1)/d/d)
         for j in range(N):
             EnergyHarvest[j] = eta * P * g[j]
             EnergyTrans[j] = sigma/h[j]*(2**S)

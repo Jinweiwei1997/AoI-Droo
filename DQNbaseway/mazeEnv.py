@@ -1,4 +1,5 @@
 # 构造gym Maze环境
+import math
 import random
 
 import gym
@@ -20,28 +21,29 @@ class Maze(gym.Env):
     # 将会初始化动作空间与状态空间，便于强化学习算法在给定的状态空间中搜索合适的动作
     # 环境中会用的全局变量可以声明为类（self.）的变量
     def __init__(self):
-        self.action_space = spaces.Discrete(6)  # 0全体吸收能量，1-5分别为几个节点吸收能量
-        self.observation_space = spaces.Box(np.array([0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1]),\
-                                            np.array(([4, 4, 3, 6,4, 4, 3, 6,4, 4, 3, 6,4, 4, 3, 6,4, 4, 3, 6])), dtype=np.int)
+        self.action_space = spaces.Discrete(4)  # 0全体吸收能量，1-5分别为几个节点吸收能量
+        self.observation_space = spaces.Box(np.array([0,0,0,1,0,0,0,1,0,0,0,1]),\
+                                            np.array(([4, 4, 3, 4,4,4,3, 4,4, 4,3,4])), dtype=np.int)
         self.n_actions = self.action_space.n
         self.n_states = self.observation_space.shape[0] # 转态向量维度
         self.state = None
         '''self.target = {(4,2): 50}   # 安全/目标状态
         self.danger = {(2,2): -20, (3,3): -20}  # 危险状态
         '''
+        self.fixState=[1,2,1,1,1,2,0,1,2,2,2,1]
         data = sio.loadmat('./data/data_5')
         channel_h = data['input_h']
         channel_g = sio.loadmat('./data/data_5')['input_g']
     # 接收一个动作，执行这个动作
     # 用来处理状态的转换逻辑
     # 返回动作的回报、下一时刻的状态、以及是否结束当前episode及调试信息
-    def step(self, action):
+    def step(self, action,number=0,Mode='train',):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
-        h_max = 9.1 * 10 ** -6
-        h_min = 1 * 10 ** -7
-        B_max = 4 * 10 ** -4
+        h_max = [5*10**-4,3.2*10**-4,1.25*10**-4]
+        h_min = 10**-7
+        B_max = 3 * 10 ** -4
         B_min = 0
-        A_max = 4
+        A_max: int = 4
         h = []  # 上行链路信道增益
         g = []  # 下行链路信道增益
         BEnergy = []  # 电池能量
@@ -58,11 +60,11 @@ class Maze(gym.Env):
         g_now = []
         BEnergy_now = []
         AoI_now = []
-        for i in range(5):  # 五个用户的数据要遍历
+        for i in range(3):  # 五个用户的数据要遍历
             # 四个变量要遍历
-            h_k = h_min + (h_max - h_min) / 5 * self.state[4*i]
-            g_k = h_min + (h_max - h_min) / 5 * self.state[4*i+1]
-            BEnergy_a = B_min + (B_max - B_min) / 4 * self.state[4*i+2]
+            h_k = h_min + (h_max[i] - h_min) / 4 * self.state[4*i]
+            g_k = h_min + (h_max[i] - h_min) / 4 * self.state[4*i+1]
+            BEnergy_a = B_min + (B_max - B_min) / 3 * self.state[4*i+2]
             h.append(h_k)
             g.append(g_k)
             BEnergy.append(BEnergy_a)
@@ -70,7 +72,7 @@ class Maze(gym.Env):
         AoI_k = [x for x in AoI]
         BEnergy_k = [x for x in BEnergy]
         if action == 0:  # 吸收能量
-            for j in range(5):
+            for j in range(3):
                 # calculate the Energy Harvested
                 EnergyHarvest[j] = eta * P * g[j]
                 B_next = BEnergy_k[j] + EnergyHarvest[j]
@@ -79,96 +81,141 @@ class Maze(gym.Env):
                 else:
                     BEnergy_k[j] += EnergyHarvest[j]
                 # calculate the Sum of AoI
-            for j in range(5):
+            for j in range(3):
                 if (AoI[j] < A_max):
                     AoI_k[j] = AoI[j] + 1
                 else:
                     AoI_k[j] = A_max
-            for j in range(5):
+            for j in range(3):
                 AverSumAoI += AoI_k[j]
-            AverSumAoI /= (5)
+            AverSumAoI /= (3)
         elif action == 1:  # 第一个节点发送数据包
             EnergyTrans = sigma / h[0] * (2 ** S)
-            AoI_k[0] = 1
-            for j in range(1,5):
-                if (AoI[j] < A_max):
+
+            for j in range(3):
+                if (AoI[j] < A_max and j!=0):  #第一个节点发送
                     AoI_k[j] = AoI[j] + 1
                 else:
                     AoI_k[j] = A_max
-            for j in range(5):
-                AverSumAoI += AoI_k[j]
-            AverSumAoI /= (5)
+            AoI_k[0] = 1
             if BEnergy[0]<EnergyTrans:
-                BEnergy_k[0] = -1000  #如果是采取了动作变成负数了，那就变-1000
+                BEnergy_k[0] = -100 #如果是采取了动作变成负数了，那就变-1000
+            else:
+                BEnergy_k[0] -= EnergyTrans
         elif action == 2:  # 下
             EnergyTrans = sigma / h[1] * (2 ** S)
-            for j in range(5):
+
+            for j in range(3):
                 if (AoI[j] < A_max and  j!=1):
                     AoI_k[j] = AoI[j] + 1
                 else:
                     AoI_k[j] = A_max
-            for j in range(5):
+            AoI_k[1] = 1
+            for j in range(3):
                 AverSumAoI += AoI_k[j]
-            AverSumAoI /= (5)
+            AverSumAoI /= (3)
             if BEnergy[1] < EnergyTrans:
-                BEnergy[1] = -1000  # 如果是采取了动作变成负数了，那就变-1000
+                BEnergy_k[1] = -100 # 如果是采取了动作变成负数了，那就变-1000
             else:
                 BEnergy_k[1] -= EnergyTrans
         elif action == 3:  # 左
+
             EnergyTrans = sigma / h[2] * (2 ** S)
-            for j in range(5):
+
+            for j in range(3):
                 if (AoI[j] < A_max and j != 2):
                     AoI_k[j] = AoI[j] + 1
                 else:
                     AoI_k[j] = A_max
-            for j in range(5):
+            AoI_k[2] = 1
+            for j in range(3):
                 AverSumAoI += AoI_k[j]
-            AverSumAoI /= 5
+            AverSumAoI /= 3
             if BEnergy[2] < EnergyTrans:
-                BEnergy[2] = -1000  # 如果是采取了动作变成负数了，那就变-1000
+                BEnergy_k[2] = -100  # 如果是采取了动作变成负数了，那就变-1000
             else:
                 BEnergy_k[2] -= EnergyTrans
+        '''
         elif action == 4:  # 右
+
             EnergyTrans = sigma / h[3] * (2 ** S)
-            for j in range(5):
+            for j in range(3):
                 if (AoI[j] < A_max and j != 3):
                     AoI_k[j] = AoI[j] + 1
                 else:
                     AoI_k[j] = A_max
-            for j in range(5):
+            AoI_k[3] = 1
+            for j in range(3):
                 AverSumAoI += AoI_k[j]
-            AverSumAoI /= (5)
+            AverSumAoI /= (3)
             if BEnergy[3] < EnergyTrans:
-                BEnergy[3] = -1000  # 如果是采取了动作变成负数了，那就变-1000
+                BEnergy_k[3] = BEnergy_k[3]  # 如果是采取了动作变成负数了，那就变-1000
             else:
                 BEnergy_k[3] -= EnergyTrans
         elif action == 5:
             EnergyTrans = sigma / h[4] * (2 ** S)
+
             for j in range(5):
                 if (AoI[j] < A_max and j != 4):
                     AoI_k[j] = AoI[j] + 1
                 else:
                     AoI_k[j] = A_max
+            AoI_k[4] = 1
             for j in range(5):
                 AverSumAoI += AoI_k[j]
-            AverSumAoI /= (5)
+            AverSumAoI /= 5
+            AssertionError(AverSumAoI<=6)
             if BEnergy[4] < EnergyTrans:
-                BEnergy[4] = -1000  # 如果是采取了动作变成负数了，那就变-1000
+                BEnergy_k[4] = BEnergy_k[4]  # 如果是采取了动作变成负数了，那就变-1000
             else:
                 BEnergy_k[4] -= EnergyTrans
-
-        for i in range(5):
+'''
+        for i in range(3):
             #h_now.append(int((h[i] - h_min)/((h_max-h_min)/5)))
             #g_now.append(int((g[i] - h_min)/((h_max-h_min)/5)))
-            h_now.append(random.randint(0,4))
-            g_now.append(random.randint(0, 4))
-            B_int = int((BEnergy_k[i]-B_min)/((B_max-B_min)/4))
+            if i==0:
+                d=20
+            if i==1:
+                d=25
+            if i==2:
+                d=40
+            if Mode=='train':
+                h_index=int((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
+                g_index=int((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
+                if h_index>3:
+                    h_now.append(3)
+                elif h_index<0:
+                    h_now.append(0)
+                else:
+                    h_now.append(h_index)
+                if g_index>3:
+                    g_now.append(3)
+                elif g_index<0:
+                    g_now.append(0)
+                else:
+                    g_now.append(g_index)
+            else:
+                h_index = int(0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4)
+                g_index = int((0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4))
+                if h_index > 3:
+                    h_now.append(3)
+                elif h_index<0:
+                    h_now.append(0)
+                else:
+                    h_now.append(h_index)
+                if g_index > 3:
+                    g_now.append(3)
+                elif g_index<0:
+                    g_now.append(0)
+                else:
+                    g_now.append(g_index)
+            B_int = int((BEnergy_k[i]-B_min)/((B_max-B_min)/3))
             if B_int >3:
                 BEnergy_now.append(3)
             else:
                 BEnergy_now.append(B_int)
         next_index=[]
-        for i in range(5):
+        for i in range(3):
             next_index.append(h_now[i])
             next_index.append(g_now[i])
             next_index.append(BEnergy_now[i])
@@ -177,20 +224,25 @@ class Maze(gym.Env):
         flat=0    #标记是否电池过量
         done = False   #默认状态是否不对
         reward = 0     #默认reward=0
-        for i in range(5):
+        for i in range(3):
             if next_state[4*i+2] <0:
                 done = False
-                reward = 100000
+                reward = 100
+                AoI_k=[x for x in AoI]
                 flat = 1
                 break
+
         if flat == 0:
-            for i in range(5):
+            reward =0
+            for i in range(3):
                 reward+=AoI_k[i]
-            reward /= 5
+            reward /= 3
             done = True
-        self.state = next_state
+            self.state = next_state
+            AssertionError(reward<=4)
+
         self.counts += 1
-        return self.state, -reward, done
+        return self.state, -reward, done,AoI_k
 
     # 用于在每轮开始之前重置智能体的状态，把环境恢复到最开始
     def reset(self, startstate=None):
