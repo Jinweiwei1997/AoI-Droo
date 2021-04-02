@@ -138,7 +138,7 @@ if __name__ == '__main__':
     for i_episode in range(200):
         s = env.reset()                 # 重置初始状态
         ep_r = 0
-        for i in range(1000):
+        for i in range(100):
             #env.render()                # 刷新画面
             aoi=[]
             a = dqn.choose_action(s)    # 选择动作
@@ -146,7 +146,7 @@ if __name__ == '__main__':
             if done == False:                    # 如果done（智能到达终点/掉入陷阱），结束本轮
                 aoi=[]
                 s_, r, done1, aoi = env.step(0)  # 执行动作，获得下一个状态s_，回报r，是否结束标记done
-                r=-100
+                r=-10000
             dqn.store_transition(s, a, r, s_)   # 存储 一步 的信息
             #print(r)
 

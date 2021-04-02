@@ -39,7 +39,7 @@ class Maze(gym.Env):
     # 返回动作的回报、下一时刻的状态、以及是否结束当前episode及调试信息
     def step(self, action,number=0,Mode='train',):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
-        h_max = [5*10**-4,3.2*10**-4,1.25*10**-4]
+        h_max = [15*5*10**-4,15*3.2*10**-4,15*1.25*10**-4]
         h_min = 10**-7
         B_max = 3 * 10 ** -4
         B_min = 0
@@ -132,7 +132,7 @@ class Maze(gym.Env):
                 AverSumAoI += AoI_k[j]
             AverSumAoI /= 3
             if BEnergy[2] < EnergyTrans:
-                BEnergy_k[2] = -100  # 如果是采取了动作变成负数了，那就变-1000
+                BEnergy_k[2] = -10000  # 如果是采取了动作变成负数了，那就变-1000
             else:
                 BEnergy_k[2] -= EnergyTrans
         '''
@@ -227,7 +227,7 @@ class Maze(gym.Env):
         for i in range(3):
             if next_state[4*i+2] <0:
                 done = False
-                reward = 100
+                reward = 10000
                 AoI_k=[x for x in AoI]
                 flat = 1
                 break
