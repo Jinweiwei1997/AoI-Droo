@@ -39,7 +39,7 @@ class Maze(gym.Env):
     # 返回动作的回报、下一时刻的状态、以及是否结束当前episode及调试信息
     def step(self, action,number=0,Mode='train',):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
-        h_max = [15*5*10**-4,15*3.2*10**-4,15*1.25*10**-4]
+        h_max = [10*5*10**-4,10*3.2*10**-4,10*1.25*10**-4]
         h_min = 10**-7
         B_max = 3 * 10 ** -4
         B_min = 0
@@ -49,7 +49,7 @@ class Maze(gym.Env):
         BEnergy = []  # 电池能量
         AoI = []
         sigma = 3.162277660168375 * 10 ** (-13)
-        S = 12
+        S = 15
         AverSumAoI = 0  # Sum of AoI at base station
         theta = []  # never used 权重
         eta = 0.5  # gain loss
@@ -180,8 +180,8 @@ class Maze(gym.Env):
             if i==2:
                 d=40
             if Mode=='train':
-                h_index=int((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
-                g_index=int((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
+                h_index=math.ceil((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
+                g_index= math.ceil((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
                 if h_index>3:
                     h_now.append(3)
                 elif h_index<0:
@@ -195,8 +195,8 @@ class Maze(gym.Env):
                 else:
                     g_now.append(g_index)
             else:
-                h_index = int(0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4)
-                g_index = int((0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4))
+                h_index = math.ceil((0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4))
+                g_index = math.ceil((0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4))
                 if h_index > 3:
                     h_now.append(3)
                 elif h_index<0:
@@ -227,7 +227,7 @@ class Maze(gym.Env):
         for i in range(3):
             if next_state[4*i+2] <0:
                 done = False
-                reward = 10000
+                reward = 100
                 AoI_k=[x for x in AoI]
                 flat = 1
                 break

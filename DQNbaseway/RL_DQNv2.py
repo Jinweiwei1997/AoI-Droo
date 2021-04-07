@@ -15,7 +15,7 @@ class DQN():
                  dim_state,
                  n_actions,
                  batch_size=32,
-                 learning_rate=0.9,
+                 learning_rate=0.001,
                  epsilon=0.9,
                  gamma=0.9,
                  training_interval=10,
@@ -39,6 +39,7 @@ class DQN():
         self.loss_func = nn.MSELoss()   # 网络的损失函数
         self.cost_his = []
         self.training_interval=training_interval
+        self.a=0.8
         self.fixState=np.array([1,2,1,1,1,2,0,1,2,2,2,1])
 
     def plot_cost(self):
@@ -88,7 +89,7 @@ class DQN():
         q_eval = self.eval_net(b_s).gather(1, b_a)
         q_next = self.target_net(b_s_).detach()
         q_fix =self.target_net(f_s).detach()
-        q_target = b_r + self.gamma *( q_next.max(1)[0].view(self.batch_size, 1)-q_fix.max(1)[0].view(self.batch_size, 1)-q_eval)
+        q_target =q_eval  + self.a *(b_r+ q_next.max(1)[0].view(self.batch_size, 1)-q_fix.max(1)[0].view(self.batch_size, 1)-q_eval)
         loss = self.loss_func(q_eval, q_target)
 
 
@@ -138,18 +139,17 @@ if __name__ == '__main__':
     for i_episode in range(200):
         s = env.reset()                 # 重置初始状态
         ep_r = 0
-        for i in range(100):
+        for i in range(300):
             #env.render()                # 刷新画面
             aoi=[]
             a = dqn.choose_action(s)    # 选择动作
             s_, r, done,aoi = env.step(a)   # 执行动作，获得下一个状态s_，回报r，是否结束标记done
-            if done == False:                    # 如果done（智能到达终点/掉入陷阱），结束本轮
-                aoi=[]
-                s_, r, done1, aoi = env.step(0)  # 执行动作，获得下一个状态s_，回报r，是否结束标记done
-                r=-10000
-            dqn.store_transition(s, a, r, s_)   # 存储 一步 的信息
-            #print(r)
 
+            #if done == False:                    # 如果done（智能到达终点/掉入陷阱），结束本轮
+            #    aoi=[]
+            #    #a=0
+            #    s_, r1, done, aoi = env.step(0)  # 执行动作，获得下一个状态s_，回报r，是否结束标记done
+            dqn.store_transition(s, a, r, s_)   # 存储 一步 的信息
             if dqn.memory_counter > dqn.memory_size:    # 当记忆库存满（非必要等到存满）的时候，开始训练
                 dqn.learn()
             s = s_
@@ -187,7 +187,7 @@ if __name__ == '__main__':
     x=0
     env.state=s
     dqn_LongTime=[]
-    for i_episode in range(100):
+    for i_episode in range(1000):
         ep_r = 0
         aoi=[]
         a = dqn.final_choose(s)    # 选择动作
