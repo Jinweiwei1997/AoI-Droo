@@ -9,7 +9,7 @@ def bisection(h,g,BEnergy,AoI,M):
     Amax=4
     Bmax=0.0003
     sigma=3.162277660168375*10**(-13)
-    S=12
+    S=15
     AverSumAoI = 0 #Sum of AoI at base station
     theta =[] #never used 权重
     eta = 0.5 #gain loss

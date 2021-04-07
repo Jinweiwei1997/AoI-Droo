@@ -39,8 +39,7 @@ class Maze(gym.Env):
     # 返回动作的回报、下一时刻的状态、以及是否结束当前episode及调试信息
     def step(self, action,number=0,Mode='train',):
         assert self.action_space.contains(action), "%r (%s) invalid" % (action, type(action))
-        h_max = [10*5*10**-4,10*3.2*10**-4,10*1.25*10**-4]
-        h_min = 10**-7
+        fi=[0,0.22314,0.510826,0.91629,1.609]
         B_max = 3 * 10 ** -4
         B_min = 0
         A_max: int = 4
@@ -60,10 +59,16 @@ class Maze(gym.Env):
         g_now = []
         BEnergy_now = []
         AoI_now = []
-        for i in range(3):  # 五个用户的数据要遍历
+        for i in range(3):  # 3个用户的数据要遍历
+            if i == 0:
+                d = 20
+            if i == 1:
+                d = 25
+            if i == 2:
+                d = 40
             # 四个变量要遍历
-            h_k = h_min + (h_max[i] - h_min) / 4 * self.state[4*i]
-            g_k = h_min + (h_max[i] - h_min) / 4 * self.state[4*i+1]
+            h_k = 0.2*fi[self.state[4*i]]/d/d
+            g_k = 0.2 * fi[self.state[4 * i+1]] / d / d
             BEnergy_a = B_min + (B_max - B_min) / 3 * self.state[4*i+2]
             h.append(h_k)
             g.append(g_k)
@@ -90,7 +95,10 @@ class Maze(gym.Env):
                 AverSumAoI += AoI_k[j]
             AverSumAoI /= (3)
         elif action == 1:  # 第一个节点发送数据包
-            EnergyTrans = sigma / h[0] * (2 ** S)
+            if h[0]==0:
+                EnergyTrans = 100000
+            else:
+                EnergyTrans = sigma / h[0] * (2 ** S)
 
             for j in range(3):
                 if (AoI[j] < A_max and j!=0):  #第一个节点发送
@@ -103,7 +111,10 @@ class Maze(gym.Env):
             else:
                 BEnergy_k[0] -= EnergyTrans
         elif action == 2:  # 下
-            EnergyTrans = sigma / h[1] * (2 ** S)
+            if h[1]==0:
+                EnergyTrans=100000
+            else:
+                EnergyTrans = sigma / h[1] * (2 ** S)
 
             for j in range(3):
                 if (AoI[j] < A_max and  j!=1):
@@ -119,8 +130,10 @@ class Maze(gym.Env):
             else:
                 BEnergy_k[1] -= EnergyTrans
         elif action == 3:  # 左
-
-            EnergyTrans = sigma / h[2] * (2 ** S)
+            if h[2]==0:
+                EnergyTrans = 100000
+            else:
+                EnergyTrans = sigma / h[2] * (2 ** S)
 
             for j in range(3):
                 if (AoI[j] < A_max and j != 2):
@@ -179,36 +192,48 @@ class Maze(gym.Env):
                 d=25
             if i==2:
                 d=40
-            if Mode=='train':
-                h_index=math.ceil((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
-                g_index= math.ceil((0.2*random.expovariate(1)/d/d - h_min)/((h_max[i]-h_min)/4))
-                if h_index>3:
-                    h_now.append(3)
-                elif h_index<0:
-                    h_now.append(0)
-                else:
-                    h_now.append(h_index)
-                if g_index>3:
-                    g_now.append(3)
-                elif g_index<0:
-                    g_now.append(0)
-                else:
-                    g_now.append(g_index)
+            if Mode=='train':  #训练的时候存数据
+                H=random.expovariate(1)
+                G=random.expovariate(1)
+                flat1=0
+                flat2=0
+                for j in range(len(fi)-1):
+                    if fi[j]<=H<fi[j+1]:
+                        flat1=1
+                        h_index =j
+                        break
+                if flat1==0:
+                    h_index=4
+                h_now.append(h_index)
+                for j in range(len(fi) - 1):
+                    if fi[j] <= G < fi[j + 1]:
+                        flat2 = 1
+                        g_index = j
+                        break
+                if flat2 == 0:
+                    g_index = 4
+                g_now.append(g_index)
             else:
-                h_index = math.ceil((0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4))
-                g_index = math.ceil((0.2 * random.expovariate(1) / d / d - h_min) / ((h_max[i] - h_min) / 4))
-                if h_index > 3:
-                    h_now.append(3)
-                elif h_index<0:
-                    h_now.append(0)
-                else:
-                    h_now.append(h_index)
-                if g_index > 3:
-                    g_now.append(3)
-                elif g_index<0:
-                    g_now.append(0)
-                else:
-                    g_now.append(g_index)
+                H = random.expovariate(1)
+                G = random.expovariate(1)
+                flat1 = 0
+                flat2 = 0
+                for j in range(len(fi) - 1):
+                    if fi[j] <= H < fi[j + 1]:
+                        flat1 = 1
+                        h_index = j
+                        break
+                if flat1 == 0:
+                    h_index = 4
+                h_now.append(h_index)
+                for j in range(len(fi) - 1):
+                    if fi[j] <= G < fi[j + 1]:
+                        flat2 = 1
+                        g_index = j
+                        break
+                if flat2 == 0:
+                    g_index = 4
+                g_now.append(g_index)
             B_int = int((BEnergy_k[i]-B_min)/((B_max-B_min)/3))
             if B_int >3:
                 BEnergy_now.append(3)

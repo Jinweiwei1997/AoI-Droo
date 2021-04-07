@@ -72,7 +72,7 @@ if __name__ == "__main__":
         Adaptive K is implemented. K = max(K, K_his[-memory_size])
     '''
 
-    N = 5                       # number of users
+    N = 3                       # number of users
     n = 120000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
@@ -187,10 +187,10 @@ if __name__ == "__main__":
     AoI_t=[1,1,1,1,1]
     BEnergy_t = NodeBEnergy[1, :]
 
-    Amax = 6
-    Bmax = 0.0004
+    Amax = 4
+    Bmax = 0.0003
     sigma = 3.162277660168375 * 10 ** (-13)
-    S = 12
+    S = 15
     theta = []  # never used 权重
     eta = 0.5  # gain loss
     P = 5.012
