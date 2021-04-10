@@ -40,7 +40,18 @@ import time
 
 import os
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-def plot_rate(rate_his, rolling_intv=50):
+def plot_AoI(rate_his, rolling_intv=50):
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import matplotlib as mpl
+
+    rate_array = np.asarray(rate_his)
+    mpl.style.use('seaborn')
+    plt.plot(np.arange(len(rate_array)) + 1, rate_his)
+    plt.ylabel('Averagy Sum AoI')
+    plt.xlabel('Time Frames')
+    plt.show()
+'''def plot_rate(rate_his, rolling_intv=50):
     import matplotlib.pyplot as plt
     import pandas as pd
     import matplotlib as mpl
@@ -58,7 +69,7 @@ def plot_rate(rate_his, rolling_intv=50):
     plt.ylabel('Normalized Computation Rate')
     plt.xlabel('Time Frames')
     plt.show()
-
+'''
 def save_to_txt(rate_his, file_path):
     with open(file_path, 'w') as f:
         for rate in rate_his:
@@ -72,8 +83,8 @@ if __name__ == "__main__":
         Adaptive K is implemented. K = max(K, K_his[-memory_size])
     '''
 
-    N = 3                       # number of users
-    n = 120000                    # number of time frames
+    N = 3                        # number of users
+    n = 40000                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
@@ -149,6 +160,7 @@ if __name__ == "__main__":
 
         r_list = []
         for m in m_list:
+            assert(m[np.argmax(m)]==1)
             r_list.append(bisection(h/1000000,g/1000000,BEnergy/1000,AoI, m)[0])
 
         # encode the mode with largest reward
@@ -169,7 +181,7 @@ if __name__ == "__main__":
         mode_his.append(m_list[np.argmax(r_list)])
     total_time = time.time() - start_time
     mem.plot_cost()
-    plot_rate(rate_his_ratio)
+   # plot_rate(rate_his_ratio)
 
     print("Averaged normalized computation rate:", sum(rate_his_ratio[-num_test: -1]) / num_test)
     print('Total time consumed:%s' % total_time)
@@ -183,10 +195,9 @@ if __name__ == "__main__":
     save_to_txt(mode_his, "mode_his.txt")
 
     #####start test
-    ac = 0
-    AoI_t=[1,1,1,1,1]
-    BEnergy_t = NodeBEnergy[1, :]
-
+    AoI_t=[1,1,1]
+    BEnergy_t = NodeBEnergy[0,:]
+    pl_AoI=[]
     Amax = 4
     Bmax = 0.0003
     sigma = 3.162277660168375 * 10 ** (-13)
@@ -195,12 +206,14 @@ if __name__ == "__main__":
     eta = 0.5  # gain loss
     P = 5.012
     FinalAoI=0
-    for i in range(100):
+    number=0
+
+    for i in range(1000):
         AverSumAoI = 0
         h_t = channel_h[i, :]
         g_t = channel_g[i, :]
-        predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,BEnergy_t*1000,AoI_t))))
-        ac += 1
+        B_test=[x*1000 for x in BEnergy_t]
+        predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,B_test,AoI_t))))
         flat = 0
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
         maxj=torch.Tensor.argmax(predict)
@@ -218,19 +231,32 @@ if __name__ == "__main__":
                         BEnergy_t[j] = Bmax
             else:
                 if j == maxj:
-                    flat = 1
-                    AoI_t[j-1] = 1
-                    EnergyTrans = sigma / h_t[j-1] * (2 ** S)
+                    EnergyTrans = sigma / (h_t[j-1]/1000000) * (2 ** S)
                     if EnergyTrans > BEnergy_t[j-1]:
-                        print("传输能量比现有的能量高")
-                    BEnergy_t -= EnergyTrans
-                    for k in range(N):
-                        if k != j and AoI_t[k] < Amax:
-                            AoI_t[k] += 1
-                    break
-
+                        number+=1
+                        print(i)
+                        flat = 1
+                        for j in range(N):
+                            EnergyHarvest[j] = eta * P * g_t[j] / 1000
+                        for k in range(N):
+                            if AoI_t[k] < Amax:
+                                AoI_t[k] += 1
+                        for j in range(N):
+                            if EnergyHarvest[j] + BEnergy_t[j] < Bmax:
+                                BEnergy_t[j] += EnergyHarvest[j]
+                            else:
+                                BEnergy_t[j] = Bmax
+                    if flat==0:
+                        BEnergy_t -= EnergyTrans
+                        AoI_t[j - 1] = 1
+                        for k in range(N):
+                            if k != j-1 and AoI_t[k] < Amax:
+                                AoI_t[k] += 1
         for j in range(N):
             AverSumAoI +=AoI_t[j]
         AverSumAoI /= N
         FinalAoI = (FinalAoI *i +AverSumAoI)/(i+1)
+        pl_AoI.append(FinalAoI)
     print("Aoi:",FinalAoI)
+    print("number",number)
+    plot_AoI(pl_AoI)

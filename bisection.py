@@ -14,7 +14,7 @@ def bisection(h,g,BEnergy,AoI,M):
     theta =[] #never used 权重
     eta = 0.5 #gain loss
     P = 5.012
-
+    LyaAoI=0
     EnergyHarvest = [0 for i in range(len(M)-1)] #amount of energy harvest
     BEnergy_k = [x for x in BEnergy]
     LyaBEnergy = 0 #calculate Battery Energy changed
@@ -60,13 +60,15 @@ def bisection(h,g,BEnergy,AoI,M):
                     BEnergy_k[i - 1] -= EnergyTrans
                 else:
                     return -1000000.01, BEnergy;
-                break
+
 
 
     for i in range(len(M)-1):
         LyaBEnergy += (BEnergy_k[i]-BEnergy[i])*(BEnergy_k[i]-BEnergy[i])
+    for i in range(len(M)-1):
+        LyaAoI +=(AoI_k[i]-AoI[i])*(AoI_k[i]-AoI[i])
         B_Lya2 += BEnergy_k[i]*BEnergy_k[i]
-    LyapnovDrift = -LyaBEnergy - AverSumAoI
+    LyapnovDrift = -AverSumAoI-LyaBEnergy
     return LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
 
 

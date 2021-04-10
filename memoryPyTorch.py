@@ -67,16 +67,18 @@ class MemoryDNN:
         # replace the old memory with new memory
 
         idx = self.memory_counter % self.memory_size
+        assert (m[np.argmax(m)] == 1)
         self.memory[idx, :] = np.hstack((h,g,BEnergy,AoI, m))
         self.memory_counter += 1
 
 
     def encode(self, h, g,BEnergy,AoI,m):
         # encoding the entry
+        assert (m[np.argmax(m)] == 1)
         self.remember(h,g,BEnergy,AoI, m)
         # train the DNN every 10 step
 #        if self.memory_counter> self.memory_size / 2 and self.memory_counter % self.training_interval == 0:
-        if self.memory_counter % self.training_interval == 0:
+        if  self.memory_counter % self.training_interval == 0 :
             self.learn()
 
     def learn(self):
@@ -90,11 +92,12 @@ class MemoryDNN:
 
         h_train = torch.Tensor(batch_memory[:, 0: self.net[0]])
         m_train = torch.Tensor(batch_memory[:, self.net[0]:])
+        xx=batch_memory[:, self.net[0]:]
 
 
         # train the DNN
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        criterion = nn.BCELoss()
+        criterion = nn.BCELoss();
         self.model.train()
         optimizer.zero_grad()
         predict = self.model(h_train)
@@ -106,6 +109,7 @@ class MemoryDNN:
         self.cost = loss.item()
         assert(self.cost > 0)
         self.cost_his.append(self.cost)
+        '''
         if(self.memory_counter > 30000 and (self.memory_counter-30000)%128==0):
             train_acc = 0
             for x in range(128):
@@ -117,6 +121,7 @@ class MemoryDNN:
                     train_correct = 1
                     train_acc += train_correct
             print("准确率",train_acc/128)
+            '''
     def decode(self, h, k , mode = 'OP'):
         '''
         #to have batch dimension when feed into Tensor
