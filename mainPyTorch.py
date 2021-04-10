@@ -106,8 +106,8 @@ if __name__ == "__main__":
     AoI = data['input_aoi']
     '''
     # increase h to close to 1 for better training; it is a trick widely adopted in deep learning
-    channel_h = channel_h * 1000000
-    channel_g = channel_g * 1000000
+    channel_h = channel_h * 100000
+    channel_g = channel_g * 100000
     Energy = NodeBEnergy*1000
     channel = [x for x in channel_h]
     # generate the train and test data sample index
@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     Action =[]
     mem = MemoryDNN(net = [4*N, 120, 80, N+1],
-                    learning_rate = 0.01,
+                    learning_rate = 0.0008,
                     training_interval=10,
                     batch_size=128,
                     memory_size=Memory
@@ -161,7 +161,7 @@ if __name__ == "__main__":
         r_list = []
         for m in m_list:
             assert(m[np.argmax(m)]==1)
-            r_list.append(bisection(h/1000000,g/1000000,BEnergy/1000,AoI, m)[0])
+            r_list.append(bisection(h/100000,g/100000,BEnergy/1000,AoI, m)[0])
 
         # encode the mode with largest reward
         mem.encode(h,g,BEnergy,AoI, m_list[np.argmax(r_list)])
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         for j in range(N+1):
             if maxj==0:
                 for j in range(N):
-                    EnergyHarvest[j] = eta * P * g_t[j]/1000000
+                    EnergyHarvest[j] = eta * P * g_t[j]/100000
                 for k in range(N):
                     if AoI_t[k] < Amax:
                         AoI_t[k] += 1
@@ -231,7 +231,7 @@ if __name__ == "__main__":
                         BEnergy_t[j] = Bmax
             else:
                 if j == maxj:
-                    EnergyTrans = sigma / (h_t[j-1]/1000000) * (2 ** S)
+                    EnergyTrans = sigma / (h_t[j-1]/100000) * (2 ** S)
                     if EnergyTrans > BEnergy_t[j-1]:
                         number+=1
                         print(i)
