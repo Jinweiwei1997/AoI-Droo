@@ -187,11 +187,11 @@ if __name__ == '__main__':
     x=0
     env.state=s
     dqn_LongTime=[]
-    for i_episode in range(1000):
+    for i_episode in range(3000):
         ep_r = 0
         aoi=[]
         a = dqn.final_choose(s)    # 选择动作
-        s_, r, done,aoi = env.step(a)   # 执行动作，获得下一个状态s_，回报r，是否结束标记done
+        s_, r, done,aoi = env.step(a,i_episode+1,"test")   # 执行动作，获得下一个状态s_，回报r，是否结束标记done
         if(done==False):
             aoi=[]
             s_, r, done, aoi = env.step(0)

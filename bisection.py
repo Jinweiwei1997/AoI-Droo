@@ -19,6 +19,9 @@ def bisection(h,g,BEnergy,AoI,M):
     BEnergy_k = [x for x in BEnergy]
     LyaBEnergy = 0 #calculate Battery Energy changed
     B_Lya2 = 0
+    BSum=0
+    B_change=0
+    AoI_change=0
     for i in range(len(M)):
         if M[0] == 1:
             # the model is H
@@ -59,7 +62,7 @@ def bisection(h,g,BEnergy,AoI,M):
                 if (BEnergy_k[i - 1] > EnergyTrans):
                     BEnergy_k[i - 1] -= EnergyTrans
                 else:
-                    return -1000000.01, BEnergy;
+                    return -1000000000.01, BEnergy
 
 
 
@@ -68,7 +71,11 @@ def bisection(h,g,BEnergy,AoI,M):
     for i in range(len(M)-1):
         LyaAoI +=(AoI_k[i]-AoI[i])*(AoI_k[i]-AoI[i])
         B_Lya2 += BEnergy_k[i]*BEnergy_k[i]
-    LyapnovDrift = -AverSumAoI-LyaBEnergy
+        BSum +=BEnergy_k[i]
+        B_change+=(BEnergy_k[i]-BEnergy[i])
+        AoI_change+=AoI[i]
+    LyaAoI2=AoI_change-AverSumAoI
+    LyapnovDrift =-1*AverSumAoI+1000*BSum-LyaBEnergy
     return LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
 
 

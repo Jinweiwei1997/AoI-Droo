@@ -106,8 +106,8 @@ if __name__ == "__main__":
     AoI = data['input_aoi']
     '''
     # increase h to close to 1 for better training; it is a trick widely adopted in deep learning
-    channel_h = channel_h * 100000
-    channel_g = channel_g * 100000
+    channel_h = channel_h * 10000
+    channel_g = channel_g * 10000
     Energy = NodeBEnergy*1000
     channel = [x for x in channel_h]
     # generate the train and test data sample index
@@ -118,8 +118,8 @@ if __name__ == "__main__":
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
     Action =[]
-    mem = MemoryDNN(net = [4*N, 120, 80, N+1],
-                    learning_rate = 0.0008,
+    mem = MemoryDNN(net = [4*N,40, 80, N+1],
+                    learning_rate = 0.0006,
                     training_interval=10,
                     batch_size=128,
                     memory_size=Memory
@@ -132,6 +132,8 @@ if __name__ == "__main__":
     mode_his = []
     k_idx_his = []
     K_his = []
+    Energy_train = [0.2,0.2,0.2]
+    AoI_text=[]
     for i in range(n):
         if i % (n//10) == 0:
            print("%0.1f"%(i/n))
@@ -161,10 +163,11 @@ if __name__ == "__main__":
         r_list = []
         for m in m_list:
             assert(m[np.argmax(m)]==1)
-            r_list.append(bisection(h/100000,g/100000,BEnergy/1000,AoI, m)[0])
-
+            Energy_now=[x/1000 for x in Energy_train]
+            r_list.append(bisection(h/10000,g/10000,Energy_now,AoI, m)[0])
         # encode the mode with largest reward
-        mem.encode(h,g,BEnergy,AoI, m_list[np.argmax(r_list)])
+        mem.encode(h,g,Energy_train,AoI, m_list[np.argmax(r_list)])
+        Energy_train=[x*1000 for x in (bisection(h/10000,g/10000,Energy_now,AoI,m_list[np.argmax(r_list)])[2])]
         # the main code for DROO training ends here
         count = 0 #start the calculate AverageAoI
 
@@ -196,7 +199,7 @@ if __name__ == "__main__":
 
     #####start test
     AoI_t=[1,1,1]
-    BEnergy_t = NodeBEnergy[0,:]
+    BEnergy_t = [0.0002,0.0002,0.0002]
     pl_AoI=[]
     Amax = 4
     Bmax = 0.0003
@@ -208,7 +211,7 @@ if __name__ == "__main__":
     FinalAoI=0
     number=0
 
-    for i in range(1000):
+    for i in range(3000):
         AverSumAoI = 0
         h_t = channel_h[i, :]
         g_t = channel_g[i, :]
@@ -216,11 +219,11 @@ if __name__ == "__main__":
         predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,B_test,AoI_t))))
         flat = 0
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
-        maxj=torch.Tensor.argmax(predict)
+        maxj=int(torch.Tensor.argmax(predict))
         for j in range(N+1):
             if maxj==0:
                 for j in range(N):
-                    EnergyHarvest[j] = eta * P * g_t[j]/100000
+                    EnergyHarvest[j] = eta * P * g_t[j]/10000
                 for k in range(N):
                     if AoI_t[k] < Amax:
                         AoI_t[k] += 1
@@ -231,21 +234,20 @@ if __name__ == "__main__":
                         BEnergy_t[j] = Bmax
             else:
                 if j == maxj:
-                    EnergyTrans = sigma / (h_t[j-1]/100000) * (2 ** S)
+                    EnergyTrans = sigma / (h_t[j-1]/10000) * (2 ** S)
                     if EnergyTrans > BEnergy_t[j-1]:
                         number+=1
-                        print(i)
                         flat = 1
-                        for j in range(N):
-                            EnergyHarvest[j] = eta * P * g_t[j] / 1000
+                        for k in range(N):
+                            EnergyHarvest[k] = eta * P * g_t[k] / 10000
                         for k in range(N):
                             if AoI_t[k] < Amax:
                                 AoI_t[k] += 1
-                        for j in range(N):
-                            if EnergyHarvest[j] + BEnergy_t[j] < Bmax:
-                                BEnergy_t[j] += EnergyHarvest[j]
+                        for k in range(N):
+                            if EnergyHarvest[k] + BEnergy_t[k] < Bmax:
+                                BEnergy_t[k] += EnergyHarvest[k]
                             else:
-                                BEnergy_t[j] = Bmax
+                                BEnergy_t[k] = Bmax
                     if flat==0:
                         BEnergy_t -= EnergyTrans
                         AoI_t[j - 1] = 1
@@ -254,9 +256,11 @@ if __name__ == "__main__":
                                 AoI_t[k] += 1
         for j in range(N):
             AverSumAoI +=AoI_t[j]
+        AoI_text.append([x for x in AoI_t])
         AverSumAoI /= N
         FinalAoI = (FinalAoI *i +AverSumAoI)/(i+1)
         pl_AoI.append(FinalAoI)
     print("Aoi:",FinalAoI)
+    save_to_txt(AoI_text, "AoI_text")
     print("number",number)
     plot_AoI(pl_AoI)

@@ -24,7 +24,7 @@ class MemoryDNN:
     def __init__(
         self,
         net,
-        learning_rate = 0.01,
+        learning_rate = 0.00005,
         training_interval=10,
         batch_size=100,
         memory_size=1000,
@@ -107,7 +107,7 @@ class MemoryDNN:
         optimizer.step()
 
         self.cost = loss.item()
-        assert(self.cost > 0)
+        #assert(self.cost > 0)
         self.cost_his.append(self.cost)
         '''
         if(self.memory_counter > 30000 and (self.memory_counter-30000)%128==0):
@@ -121,7 +121,7 @@ class MemoryDNN:
                     train_correct = 1
                     train_acc += train_correct
             print("准确率",train_acc/128)
-            '''
+'''
     def decode(self, h, k , mode = 'OP'):
         '''
         #to have batch dimension when feed into Tensor

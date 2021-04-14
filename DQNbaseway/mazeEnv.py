@@ -31,9 +31,9 @@ class Maze(gym.Env):
         self.danger = {(2,2): -20, (3,3): -20}  # 危险状态
         '''
         self.fixState=[1,2,1,1,1,2,0,1,2,2,2,1]
-        data = sio.loadmat('./data/data_5')
-        channel_h = data['input_h']
-        channel_g = sio.loadmat('./data/data_5')['input_g']
+        data = sio.loadmat('./data/data_3')
+        self.channel_h = data['input_h']
+        self.channel_g = sio.loadmat('./data/data_3')['input_g']
     # 接收一个动作，执行这个动作
     # 用来处理状态的转换逻辑
     # 返回动作的回报、下一时刻的状态、以及是否结束当前episode及调试信息
@@ -192,9 +192,9 @@ class Maze(gym.Env):
                 d=25
             if i==2:
                 d=40
-            if Mode=='train':  #训练的时候存数据
-                H=random.expovariate(1)
-                G=random.expovariate(1)
+            if Mode=='test':  #训练的时候存数据
+                H=self.channel_h[number,i]*d*d/0.2
+                G=self.channel_g[number,i]*d*d/0.2
                 flat1=0
                 flat2=0
                 for j in range(len(fi)-1):
