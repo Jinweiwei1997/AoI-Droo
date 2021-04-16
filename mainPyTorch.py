@@ -118,8 +118,8 @@ if __name__ == "__main__":
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
     Action =[]
-    mem = MemoryDNN(net = [4*N,40, 80, N+1],
-                    learning_rate = 0.0006,
+    mem = MemoryDNN(net = [4*N,120, 80, N+1],
+                    learning_rate = 0.000008,
                     training_interval=10,
                     batch_size=128,
                     memory_size=Memory
@@ -134,6 +134,7 @@ if __name__ == "__main__":
     K_his = []
     Energy_train = [0.2,0.2,0.2]
     AoI_text=[]
+    AoI = [1, 1, 1]
     for i in range(n):
         if i % (n//10) == 0:
            print("%0.1f"%(i/n))
@@ -154,34 +155,38 @@ if __name__ == "__main__":
 
         h = channel_h[i_idx,:]
         g = channel_g[i_idx,:]
-        AoI = ProcessAoI[i_idx,:]
+        #AoI = ProcessAoI[i_idx,:]
+
         BEnergy = Energy[i_idx,:]
-
         # the action selection must be either 'OP' or 'KNN'
-        m_list = mem.decode(h, N, decoder_mode)
-
+        m_list=[]
+        m_list = mem.decode(h,g,Energy_train,AoI, N, decoder_mode)
         r_list = []
+        Energy_now = [x / 1000 for x in Energy_train]
         for m in m_list:
-            assert(m[np.argmax(m)]==1)
-            Energy_now=[x/1000 for x in Energy_train]
-            r_list.append(bisection(h/10000,g/10000,Energy_now,AoI, m)[0])
+            r_list.append(bisection(h / 10000, g / 10000, Energy_now, AoI, m)[0])
         # encode the mode with largest reward
-        mem.encode(h,g,Energy_train,AoI, m_list[np.argmax(r_list)])
-        Energy_train=[x*1000 for x in (bisection(h/10000,g/10000,Energy_now,AoI,m_list[np.argmax(r_list)])[2])]
-        # the main code for DROO training ends here
-        count = 0 #start the calculate AverageAoI
+        try:
+            Energy_bb = [x for x in (bisection(h / 10000, g / 10000, Energy_now, AoI, m_list[np.argmax(r_list)])[2])]
+            Energy_train = [x * 1000 for x in Energy_bb]
+            AoI = [x for x in (bisection(h / 10000, g / 10000, Energy_now, AoI, m_list[np.argmax(r_list)])[3])]
+            mem.encode(h, g, Energy_train, AoI, m_list[np.argmax(r_list)])
 
+            # the main code for DROO training ends here
+            count = 0  # start the calculate AverageAoI
 
-
-        # the following codes store some interested metrics for illustrations
-        # memorize the largest reward
-        rate_his.append(np.max(r_list))
-        rate_his_ratio.append(rate_his[-1] / rate[i_idx][0])
-        # record the index of largest reward
-        k_idx_his.append(np.argmax(r_list))
-        # record K in case of adaptive K
-        K_his.append(K)
-        mode_his.append(m_list[np.argmax(r_list)])
+            # the following codes store some interested metrics for illustrations
+            # memorize the largest reward
+            rate_his.append(np.max(r_list))
+            rate_his_ratio.append(rate_his[-1] / rate[i_idx][0])
+            # record the index of largest reward
+            k_idx_his.append(np.argmax(r_list))
+            # record K in case of adaptive K
+            K_his.append(K)
+            mode_his.append(m_list[np.argmax(r_list)])
+        except:
+            print(i)
+            continue
     total_time = time.time() - start_time
     mem.plot_cost()
    # plot_rate(rate_his_ratio)
@@ -215,8 +220,21 @@ if __name__ == "__main__":
         AverSumAoI = 0
         h_t = channel_h[i, :]
         g_t = channel_g[i, :]
+
         B_test=[x*1000 for x in BEnergy_t]
-        predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,B_test,AoI_t))))
+        #predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,B_test,AoI_t))))
+        m_list1=[]
+        m_list1 = mem.decode(h_t,g_t,B_test,AoI_t, N, decoder_mode)
+        r_list1 = []
+
+        for m in m_list1:
+            assert (m[np.argmax(m)] == 1)
+            r_list1.append(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI_t, m)[0])
+        # encode the mode with largest reward
+
+        LyaDrift,AverSumAoI,B_tt,AoI_t=(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI, m_list1[np.argmax(r_list1)]))
+        BEnergy_t = [x  for x in B_tt]
+        '''
         flat = 0
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
         maxj=int(torch.Tensor.argmax(predict))
@@ -258,8 +276,11 @@ if __name__ == "__main__":
             AverSumAoI +=AoI_t[j]
         AoI_text.append([x for x in AoI_t])
         AverSumAoI /= N
+        '''
+        AoI_text.append([x for x in AoI_t])
         FinalAoI = (FinalAoI *i +AverSumAoI)/(i+1)
         pl_AoI.append(FinalAoI)
+
     print("Aoi:",FinalAoI)
     save_to_txt(AoI_text, "AoI_text")
     print("number",number)

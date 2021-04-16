@@ -1,4 +1,3 @@
-from memoryPyTorch import MemoryDNN
 
 
 def bisection(h,g,BEnergy,AoI,M):
@@ -75,7 +74,7 @@ def bisection(h,g,BEnergy,AoI,M):
         B_change+=(BEnergy_k[i]-BEnergy[i])
         AoI_change+=AoI[i]
     LyaAoI2=AoI_change-AverSumAoI
-    LyapnovDrift =-1*AverSumAoI+1000*BSum-LyaBEnergy
+    LyapnovDrift =-1*AverSumAoI+LyaBEnergy
     return LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
 
 

@@ -180,7 +180,7 @@ if __name__ == '__main__':
     print(np.average(rs))
     '''
     print("测试部分")
-    s1=np.array([2, 2, 2, 1,2,2,3, 1,2, 2,3,1])
+    s1=np.array([0, 2, 2, 1,2,3,2, 1,3, 0,2,1])
     s=s1
     dqn_aoi =[]
     dqn_AverAoI=0

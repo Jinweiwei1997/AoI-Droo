@@ -15,6 +15,7 @@ import torch.optim as optim
 import torch.nn as nn
 import numpy as np
 
+from bisection import bisection
 
 print(torch.__version__)
 
@@ -122,7 +123,53 @@ class MemoryDNN:
                     train_acc += train_correct
             print("准确率",train_acc/128)
 '''
-    def decode(self, h, k , mode = 'OP'):
+    def decode(self, h,g,BEnergy,AoI, k , mode = 'OP'):
+        if mode =='OP':    #遍历所有的动作，因为设定的动作至多又一个1
+           return self.allAction(k)
+        if mode=='Choose': #选择动作
+            return self.chooseAction( h,g,BEnergy,AoI,k)
+    def allAction(slef,k):
+        m_list = []
+        for i in range(k + 1):
+            m_index = []
+            for j in range(k + 1):
+                if (i == j):
+                    m_index.append(1)
+                else:
+                    m_index.append(0)
+            m_list.append(m_index)
+        return m_list
+    def chooseAction(self, h,g,BEnergy,AoI,k):
+        m_list=[]
+        action_number=int(k/1)
+       #self.model.eval()
+        predict = self.model(torch.Tensor(np.hstack((h, g, BEnergy, AoI))))
+        predict = predict.detach().numpy()
+        list_in=[]
+        for i in range(k+1):
+            max=0
+            flat=0
+            for j in range(k+1):
+                if predict[j]>=max and (j not in list_in) :
+                    max=predict[j]
+                    flat=j
+            list_in.append(flat)
+        flat_number=0
+        for node_to_trans in list_in :
+            m_index=[]
+            for i in range(k+1):
+                if i==node_to_trans:
+                    m_index.append(1)
+                else:
+                    m_index.append(0)
+            B_bb=[x/1000 for x in BEnergy]
+            x=bisection(h / 10000, g / 10000, B_bb, AoI, m_index)[0]
+            if  x> -100000:
+                m_list.append(m_index)
+                flat_number+=1
+            if flat_number ==action_number:
+                break
+        return m_list
         '''
         #to have batch dimension when feed into Tensor
         h = torch.Tensor(h[np.newaxis, :])
@@ -137,19 +184,6 @@ class MemoryDNN:
         else:
             print("The action selection must be 'OP' or 'KNN'")
         '''
-
-        #遍历所有的动作，因为设定的动作至多又一个1
-        m_list=[]
-
-        for i in range(k+1):
-            m_index = []
-            for j in range(k+1):
-                if(i==j):
-                    m_index.append(1)
-                else:
-                    m_index.append(0)
-            m_list.append(m_index)
-        return  m_list
     '''def knm(self, m, k = 1):
         # return k order-preserving binary actions
         m_list = []
