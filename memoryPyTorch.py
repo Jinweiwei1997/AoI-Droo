@@ -141,7 +141,7 @@ class MemoryDNN:
         return m_list
     def chooseAction(self, h,g,BEnergy,AoI,k):
         m_list=[]
-        action_number=int(k/1)
+        action_number=int((k+1)/2)
        #self.model.eval()
         predict = self.model(torch.Tensor(np.hstack((h, g, BEnergy, AoI))))
         predict = predict.detach().numpy()

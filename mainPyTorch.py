@@ -86,7 +86,7 @@ if __name__ == "__main__":
     N = 3                        # number of users
     n = 40000                    # number of time frames
     K = N                        # initialize K = N
-    decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
+    decoder_mode = 'Choose'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
     Delta = 32                   # Update interval for adaptive K
 
@@ -118,7 +118,7 @@ if __name__ == "__main__":
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
     Action =[]
-    mem = MemoryDNN(net = [4*N,120, 80, N+1],
+    mem = MemoryDNN(net = [4*N,40, 80, N+1],
                     learning_rate = 0.000008,
                     training_interval=10,
                     batch_size=128,
@@ -232,7 +232,7 @@ if __name__ == "__main__":
             r_list1.append(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI_t, m)[0])
         # encode the mode with largest reward
 
-        LyaDrift,AverSumAoI,B_tt,AoI_t=(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI, m_list1[np.argmax(r_list1)]))
+        LyaDrift,AverSumAoI,B_tt,AoI_t=(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI_t, m_list1[np.argmax(r_list1)]))
         BEnergy_t = [x  for x in B_tt]
         '''
         flat = 0
