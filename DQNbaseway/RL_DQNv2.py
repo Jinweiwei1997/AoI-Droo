@@ -145,10 +145,10 @@ if __name__ == '__main__':
             a = dqn.choose_action(s)    # 选择动作
             s_, r, done,aoi = env.step(a)   # 执行动作，获得下一个状态s_，回报r，是否结束标记done
 
-            #if done == False:                    # 如果done（智能到达终点/掉入陷阱），结束本轮
-            #    aoi=[]
-            #    #a=0
-            #    s_, r1, done, aoi = env.step(0)  # 执行动作，获得下一个状态s_，回报r，是否结束标记done
+            if done == False:                    # 如果done（智能到达终点/掉入陷阱），结束本轮
+               aoi=[]
+            #   a=0
+               s_, r1, done, aoi = env.step(0)  # 执行动作，获得下一个状态s_，回报r，是否结束标记done
             dqn.store_transition(s, a, r, s_)   # 存储 一步 的信息
             if dqn.memory_counter > dqn.memory_size:    # 当记忆库存满（非必要等到存满）的时候，开始训练
                 dqn.learn()

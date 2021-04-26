@@ -1,6 +1,6 @@
 
 
-def bisection(h,g,BEnergy,AoI,M):
+def bisection(h,g,BEnergy,AoI,M, v1=1,v2=1):
     #AoISum The average sum of processes at base station
     V=1 #Lyapnov drift value
     flat=1 #define H or T
@@ -14,9 +14,11 @@ def bisection(h,g,BEnergy,AoI,M):
     eta = 0.5 #gain loss
     P = 5.012
     LyaAoI=0
+    LyaAoI1=0
     EnergyHarvest = [0 for i in range(len(M)-1)] #amount of energy harvest
     BEnergy_k = [x for x in BEnergy]
     LyaBEnergy = 0 #calculate Battery Energy changed
+    LyaBEnergy1=0
     B_Lya2 = 0
     BSum=0
     B_change=0
@@ -67,14 +69,20 @@ def bisection(h,g,BEnergy,AoI,M):
 
     for i in range(len(M)-1):
         LyaBEnergy += (BEnergy_k[i]-BEnergy[i])*(BEnergy_k[i]-BEnergy[i])
+        LyaBEnergy1 += BEnergy_k[i]*BEnergy_k[i]-BEnergy[i]*BEnergy[i]
     for i in range(len(M)-1):
         LyaAoI +=(AoI_k[i]-AoI[i])*(AoI_k[i]-AoI[i])
         B_Lya2 += BEnergy_k[i]*BEnergy_k[i]
         BSum +=BEnergy_k[i]
         B_change+=(BEnergy_k[i]-BEnergy[i])
         AoI_change+=AoI[i]
+        LyaAoI1 += AoI_k[i]*AoI_k[i]-AoI[i]*AoI[i]
+    if LyaBEnergy1<0:
+        LyaBEnergy1=-LyaBEnergy1
+    if LyaAoI1<0:
+        LyaAoI1=-LyaAoI1
     LyaAoI2=AoI_change-AverSumAoI
-    LyapnovDrift =-1*AverSumAoI+LyaBEnergy
+    LyapnovDrift =-v1*AverSumAoI -LyaBEnergy1+v2*LyaAoI
     return LyapnovDrift,AverSumAoI,BEnergy_k,AoI_k
 
 

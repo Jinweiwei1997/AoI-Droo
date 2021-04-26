@@ -59,7 +59,10 @@ class MemoryDNN:
                 nn.Linear(self.net[1], self.net[2]),
                 nn.ReLU(),
                 nn.Linear(self.net[2], self.net[3]),
+                nn.BatchNorm1d(self.net[3]),
                 nn.Sigmoid(),
+
+
         )
 
     def remember(self, h,g,BEnergy,AoI, m):
@@ -92,13 +95,11 @@ class MemoryDNN:
         batch_memory = self.memory[sample_index, :]
 
         h_train = torch.Tensor(batch_memory[:, 0: self.net[0]])
+        # print('==============',h_train.shape)
         m_train = torch.Tensor(batch_memory[:, self.net[0]:])
-        xx=batch_memory[:, self.net[0]:]
-
-
         # train the DNN
         optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
-        criterion = nn.BCELoss();
+        criterion = nn.BCELoss()
         self.model.train()
         optimizer.zero_grad()
         predict = self.model(h_train)
@@ -141,17 +142,21 @@ class MemoryDNN:
         return m_list
     def chooseAction(self, h,g,BEnergy,AoI,k):
         m_list=[]
-        action_number=int((k+1)/2)
-       #self.model.eval()
-        predict = self.model(torch.Tensor(np.hstack((h, g, BEnergy, AoI))))
+        bisection_list=[]
+        action_number=int(4)
+        self.model.eval()
+        temp = torch.Tensor([np.hstack((h, g, BEnergy, AoI))])
+        # print('===', temp.shape)
+        predict = self.model(temp)
         predict = predict.detach().numpy()
+        # print('------',predict)
         list_in=[]
         for i in range(k+1):
             max=0
             flat=0
             for j in range(k+1):
-                if predict[j]>=max and (j not in list_in) :
-                    max=predict[j]
+                if predict[0,j]>=max and (j not in list_in) :
+                    max=predict[0,j]
                     flat=j
             list_in.append(flat)
         flat_number=0
@@ -163,13 +168,14 @@ class MemoryDNN:
                 else:
                     m_index.append(0)
             B_bb=[x/1000 for x in BEnergy]
-            x=bisection(h / 10000, g / 10000, B_bb, AoI, m_index)[0]
-            if  x> -100000:
+            x=bisection(h / 10000, g / 10000, B_bb, AoI, m_index)
+            if x[0]> -1000:
                 m_list.append(m_index)
+                bisection_list.append(x)
                 flat_number+=1
             if flat_number ==action_number:
                 break
-        return m_list
+        return m_list,bisection_list
         '''
         #to have batch dimension when feed into Tensor
         h = torch.Tensor(h[np.newaxis, :])
@@ -207,7 +213,7 @@ class MemoryDNN:
     def knn(self, m, k = 1):
         # list all 2^N binary offloading actions
         if len(self.enumerate_actions) is 0:
-            import itertools
+            import itertoolsvcc
             self.enumerate_actions = np.array(list(map(list, itertools.product([0, 1], repeat=self.net[0]))))
 
         # the 2-norm

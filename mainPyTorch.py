@@ -28,7 +28,6 @@
 
 import scipy.io as sio                     # import scipy.io for .mat file I/
 import numpy as np                         # import numpy
-import mat4py
 
 # Implementated based on the PyTorch
 import torch
@@ -48,6 +47,17 @@ def plot_AoI(rate_his, rolling_intv=50):
     rate_array = np.asarray(rate_his)
     mpl.style.use('seaborn')
     plt.plot(np.arange(len(rate_array)) + 1, rate_his)
+    plt.ylabel('Averagy Sum AoI')
+    plt.xlabel('Time Frames')
+    plt.show()
+def plot_V(rate_his, rolling_intv=50):
+    import matplotlib.pyplot as plt
+    import pandas as pd
+    import matplotlib as mpl
+
+    rate_array = np.asarray(rate_his)
+    mpl.style.use('seaborn')
+    plt.plot(np.arange(len(rate_array))/100, rate_his)
     plt.ylabel('Averagy Sum AoI')
     plt.xlabel('Time Frames')
     plt.show()
@@ -83,10 +93,10 @@ if __name__ == "__main__":
         Adaptive K is implemented. K = max(K, K_his[-memory_size])
     '''
 
-    N = 3                        # number of users
-    n = 40000                    # number of time frames
+    N = 20                       # number of users
+    n = 7500                    # number of time frames
     K = N                        # initialize K = N
-    decoder_mode = 'Choose'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
+    decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
     Delta = 32                   # Update interval for adaptive K
 
@@ -95,8 +105,8 @@ if __name__ == "__main__":
     data = sio.loadmat('./data/data_%d' %N)
     channel_h = data['input_h']
     channel_g = sio.loadmat('./data/data_%d' %N)['input_g']
-    NodeBEnergy = sio.loadmat('./data/data_%d' %N)['input_battery']
-    ProcessAoI = sio.loadmat('./data/data_%d' %N)['input_aoi']
+    #NodeBEnergy = sio.loadmat('./data/data_%d' %N)['input_battery']
+    #ProcessAoI = sio.loadmat('./data/data_%d' %N)['input_aoi']
     rate = sio.loadmat('./data/data_%d' %N)['output_obj'] # this rate is only used to plot figures; never used to train DROO.
     '''
 
@@ -108,7 +118,7 @@ if __name__ == "__main__":
     # increase h to close to 1 for better training; it is a trick widely adopted in deep learning
     channel_h = channel_h * 10000
     channel_g = channel_g * 10000
-    Energy = NodeBEnergy*1000
+    #Energy = NodeBEnergy*1000
     channel = [x for x in channel_h]
     # generate the train and test data sample index
     # data are splitted as 80:20
@@ -118,33 +128,32 @@ if __name__ == "__main__":
     num_test = min(len(channel) - split_idx, n - int(.8 * n)) # training data size
 
     Action =[]
-    mem = MemoryDNN(net = [4*N,40, 80, N+1],
-                    learning_rate = 0.000008,
+    mem = MemoryDNN(net = [4*N,120, 80, N+1],
+                    learning_rate = 0.01,
                     training_interval=10,
                     batch_size=128,
                     memory_size=Memory
                     )
 
     start_time = time.time()
-
     rate_his = []
     rate_his_ratio = []
     mode_his = []
     k_idx_his = []
     K_his = []
-    Energy_train = [0.2,0.2,0.2]
-    AoI_text=[]
-    AoI = [1, 1, 1]
+    Energy_train = [0.2 for x in range(N)]
+    AoI_text = []
+    AoI = [1 for x in range(N)]
     for i in range(n):
-        if i % (n//10) == 0:
-           print("%0.1f"%(i/n))
-        if i> 0 and i % Delta == 0:
+        if i % (n // 10) == 0:
+            print("%0.1f" % (i / n))
+        if i > 0 and i % Delta == 0:
             # index counts from 0
             if Delta > 1:
-                max_k = max(k_idx_his[-Delta:-1]) +1;
+                max_k = max(k_idx_his[-Delta:-1]) + 1;
             else:
-                max_k = k_idx_his[-1] +1;
-            K = min(max_k +1, N)
+                max_k = k_idx_his[-1] + 1;
+            K = min(max_k + 1, N)
 
         if i < n - num_test:
             # training
@@ -153,43 +162,45 @@ if __name__ == "__main__":
             # test
             i_idx = i - n + num_test + split_idx
 
-        h = channel_h[i_idx,:]
-        g = channel_g[i_idx,:]
-        #AoI = ProcessAoI[i_idx,:]
+        h = channel_h[i_idx, :]
+        g = channel_g[i_idx, :]
+        # AoI = ProcessAoI[i_idx,:]
 
-        BEnergy = Energy[i_idx,:]
+        # BEnergy = Energy[i_idx,:]
         # the action selection must be either 'OP' or 'KNN'
-        m_list=[]
-        m_list = mem.decode(h,g,Energy_train,AoI, N, decoder_mode)
+        m_list = []
+        m_list = mem.decode(h, g, Energy_train, AoI, N, decoder_mode)
         r_list = []
         Energy_now = [x / 1000 for x in Energy_train]
         for m in m_list:
             r_list.append(bisection(h / 10000, g / 10000, Energy_now, AoI, m)[0])
         # encode the mode with largest reward
-        try:
-            Energy_bb = [x for x in (bisection(h / 10000, g / 10000, Energy_now, AoI, m_list[np.argmax(r_list)])[2])]
-            Energy_train = [x * 1000 for x in Energy_bb]
-            AoI = [x for x in (bisection(h / 10000, g / 10000, Energy_now, AoI, m_list[np.argmax(r_list)])[3])]
-            mem.encode(h, g, Energy_train, AoI, m_list[np.argmax(r_list)])
+        # try:
+        Energy_bb = [x for x in (
+        bisection(h / 10000, g / 10000, Energy_now, AoI, m_list[np.argmax(r_list)])[2])]
+        Energy_train = [x * 1000 for x in Energy_bb]
+        AoI = [x for x in
+               (bisection(h / 10000, g / 10000, Energy_now, AoI, m_list[np.argmax(r_list)])[3])]
+        mem.encode(h, g, Energy_train, AoI, m_list[np.argmax(r_list)])
 
-            # the main code for DROO training ends here
-            count = 0  # start the calculate AverageAoI
+        # the main code for DROO training ends here
+        count = 0  # start the calculate AverageAoI
 
-            # the following codes store some interested metrics for illustrations
-            # memorize the largest reward
-            rate_his.append(np.max(r_list))
-            rate_his_ratio.append(rate_his[-1] / rate[i_idx][0])
-            # record the index of largest reward
-            k_idx_his.append(np.argmax(r_list))
-            # record K in case of adaptive K
-            K_his.append(K)
-            mode_his.append(m_list[np.argmax(r_list)])
-        except:
-            print(i)
-            continue
+        # the following codes store some interested metrics for illustrations
+        # memorize the largest reward
+        rate_his.append(np.max(r_list))
+        rate_his_ratio.append(rate_his[-1] / rate[i_idx][0])
+        # record the index of largest reward
+        k_idx_his.append(np.argmax(r_list))
+        # record K in case of adaptive K
+        K_his.append(K)
+        mode_his.append(m_list[np.argmax(r_list)])
+        # except:
+        #     print(i)
+        #     continue
     total_time = time.time() - start_time
     mem.plot_cost()
-   # plot_rate(rate_his_ratio)
+    #plot_rate(rate_his_ratio)
 
     print("Averaged normalized computation rate:", sum(rate_his_ratio[-num_test: -1]) / num_test)
     print('Total time consumed:%s' % total_time)
@@ -203,9 +214,9 @@ if __name__ == "__main__":
     save_to_txt(mode_his, "mode_his.txt")
 
     #####start test
-    AoI_t=[1,1,1]
-    BEnergy_t = [0.0002,0.0002,0.0002]
-    pl_AoI=[]
+    AoI_t = [1 for x in range(N)]
+    BEnergy_t = [0.0002 for x in range(N)]
+    pl_AoI = []
     Amax = 4
     Bmax = 0.0003
     sigma = 3.162277660168375 * 10 ** (-13)
@@ -213,27 +224,31 @@ if __name__ == "__main__":
     theta = []  # never used 权重
     eta = 0.5  # gain loss
     P = 5.012
-    FinalAoI=0
-    number=0
-
+    FinalAoI = 0
+    number = 0
+    Tstart=time.time()
     for i in range(3000):
+        T1=time.time()
         AverSumAoI = 0
         h_t = channel_h[i, :]
         g_t = channel_g[i, :]
 
-        B_test=[x*1000 for x in BEnergy_t]
-        #predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,B_test,AoI_t))))
-        m_list1=[]
-        m_list1 = mem.decode(h_t,g_t,B_test,AoI_t, N, decoder_mode)
+        B_test = [x * 1000 for x in BEnergy_t]
+        # predict = mem.model(torch.Tensor(np.hstack((h_t,g_t,B_test,AoI_t))))
+        m_list1 = []
+        T3=time.time()
+        print("T3-T1",T3-T1)
+        m_list1 = mem.decode(h_t, g_t, B_test, AoI_t, N, decoder_mode)
         r_list1 = []
 
         for m in m_list1:
             assert (m[np.argmax(m)] == 1)
             r_list1.append(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI_t, m)[0])
         # encode the mode with largest reward
+        LyaDrift, AverSumAoI, B_tt, AoI_t = (
+            bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI_t, m_list1[np.argmax(r_list1)]))
+        BEnergy_t = [x for x in B_tt]
 
-        LyaDrift,AverSumAoI,B_tt,AoI_t=(bisection(h_t / 10000, g_t / 10000, BEnergy_t, AoI_t, m_list1[np.argmax(r_list1)]))
-        BEnergy_t = [x  for x in B_tt]
         '''
         flat = 0
         EnergyHarvest = [0 for j in range(N)]  # amount of energy harvest
@@ -278,10 +293,12 @@ if __name__ == "__main__":
         AverSumAoI /= N
         '''
         AoI_text.append([x for x in AoI_t])
-        FinalAoI = (FinalAoI *i +AverSumAoI)/(i+1)
+        FinalAoI = (FinalAoI * i + AverSumAoI) / (i + 1)
         pl_AoI.append(FinalAoI)
-
-    print("Aoi:",FinalAoI)
+        T2=time.time()
+    Tend =time.time()
+    print("Aoi:", FinalAoI)
     save_to_txt(AoI_text, "AoI_text")
-    print("number",number)
+    print("number", number)
+    print("Time:",Tend-Tstart)
     plot_AoI(pl_AoI)
