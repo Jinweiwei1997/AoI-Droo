@@ -93,8 +93,8 @@ if __name__ == "__main__":
         Adaptive K is implemented. K = max(K, K_his[-memory_size])
     '''
 
-    N = 20                       # number of users
-    n = 7500                    # number of time frames
+    N = 3                       # number of users
+    n = 10                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure

@@ -9,6 +9,8 @@
 from __future__ import print_function
 
 import operator
+import cProfile
+import time
 
 import torch
 import torch.optim as optim
@@ -128,7 +130,7 @@ class MemoryDNN:
         if mode =='OP':    #遍历所有的动作，因为设定的动作至多又一个1
            return self.allAction(k)
         if mode=='Choose': #选择动作
-            return self.chooseAction( h,g,BEnergy,AoI,k)
+            return self.chooseAction1( h,g,BEnergy,AoI,k)
     def allAction(slef,k):
         m_list = []
         for i in range(k + 1):
@@ -143,24 +145,34 @@ class MemoryDNN:
     def chooseAction(self, h,g,BEnergy,AoI,k):
         m_list=[]
         bisection_list=[]
-        action_number=int(4)
+        action_number=int(5)
+        t0=time.time()
         self.model.eval()
+        th=time.time()
+        th0=th-t0
         temp = torch.Tensor([np.hstack((h, g, BEnergy, AoI))])
+        t1=time.time()
+        t1h=t1-th
         # print('===', temp.shape)
         predict = self.model(temp)
         predict = predict.detach().numpy()
+        t2=time.time()
+        t12=t2-t1
         # print('------',predict)
         list_in=[]
-        for i in range(k+1):
-            max=0
-            flat=0
-            for j in range(k+1):
-                if predict[0,j]>=max and (j not in list_in) :
-                    max=predict[0,j]
-                    flat=j
-            list_in.append(flat)
+        list_in=np.argsort(-predict)
+        # for i in range(k+1):
+        #     max=0
+        #     flat=0
+        #     for j in range(k+1):
+        #         if predict[0,j]>=max and (j not in list_in) :
+        #             max=predict[0,j]
+        #             flat=j
+        #     list_in.append(flat)
+        t3=time.time()
+        t23=t3-t2
         flat_number=0
-        for node_to_trans in list_in :
+        for node_to_trans in list_in[0] :
             m_index=[]
             for i in range(k+1):
                 if i==node_to_trans:
@@ -168,60 +180,82 @@ class MemoryDNN:
                 else:
                     m_index.append(0)
             B_bb=[x/1000 for x in BEnergy]
+            t4=time.time()
             x=bisection(h / 10000, g / 10000, B_bb, AoI, m_index)
+            t5=time.time()
+            t45=t5-t4
             if x[0]> -1000:
                 m_list.append(m_index)
                 bisection_list.append(x)
                 flat_number+=1
             if flat_number ==action_number:
                 break
+        t6=time.time()
+        t63=t6-t3
         return m_list,bisection_list
-        '''
-        #to have batch dimension when feed into Tensor
-        h = torch.Tensor(h[np.newaxis, :])
-        self.model.eval()
-        m_pred = self.model(h)
-        m_pred = m_pred.detach().numpy()
-
-        if mode is 'OP':
-            return self.knm(m_pred[0], k)
-        elif mode is 'KNN':
-            return self.knn(m_pred[0], k)
-        else:
-            print("The action selection must be 'OP' or 'KNN'")
-        '''
-    '''def knm(self, m, k = 1):
-        # return k order-preserving binary actions
+    #cProfile.run('chooseAction()')
+    def allAction(slef,k):
         m_list = []
-        # generate the ﬁrst binary ofﬂoading decision with respect to equation (8)
-        m_list.append(1*(m>0.5))
-
-        if k > 1:
-            # generate the remaining K-1 binary ofﬂoading decisions with respect to equation (9)
-            m_abs = abs(m)
-            idx_list = np.argsort(m_abs)[:k-1]
-            for i in range(k-1):
-                if m[idx_list[i]] >0:
-                    # set a positive user to 0
-                    m_list.append(1*(m - m[idx_list[i]] > 0))
+        for i in range(k + 1):
+            m_index = []
+            for j in range(k + 1):
+                if (i == j):
+                    m_index.append(1)
                 else:
-                    # set a negtive user to 1
-                    m_list.append(1*(m - m[idx_list[i]] >= 0))
-
+                    m_index.append(0)
+            m_list.append(m_index)
         return m_list
 
-    def knn(self, m, k = 1):
-        # list all 2^N binary offloading actions
-        if len(self.enumerate_actions) is 0:
-            import itertoolsvcc
-            self.enumerate_actions = np.array(list(map(list, itertools.product([0, 1], repeat=self.net[0]))))
-
-        # the 2-norm
-        sqd = ((self.enumerate_actions - m)**2).sum(1)
-        idx = np.argsort(sqd)
-        return self.enumerate_actions[idx[:k]]
-'''
-
+    def chooseAction1(self, h,g,BEnergy,AoI,k):
+        m_list=[]
+        bisection_list=[]
+        action_number=int(5)
+        t0=time.time()
+        self.model.eval()
+        temp = torch.Tensor([np.hstack((h, g, BEnergy, AoI))])
+        t1=time.time()
+        t01=t1-t0
+        # print('===', temp.shape)
+        predict = self.model(temp)
+        predict = predict.detach().numpy()
+        t2=time.time()
+        t12=t2-t1
+        # print('------',predict)
+        # for i in range(k+1):
+        #     max=0
+        #     flat=0
+        #     for j in range(k+1):
+        #         if predict[0,j]>=max and (j not in list_in) :
+        #             max=predict[0,j]
+        #             flat=j
+        #     list_in.append(flat)
+        t3=time.time()
+        t23=t3-t2
+        flat_number=0
+        list_in=[x for x in predict[0]]
+        for j in range(len(predict[0])) :
+            node_to_trans=np.argmax(list_in)
+            m_index=[]
+            for k in range(k+1):
+                if k==node_to_trans:
+                    m_index.append(1)
+                else:
+                    m_index.append(0)
+            B_bb=[x/1000 for x in BEnergy]
+            t4=time.time()
+            x=bisection(h / 10000, g / 10000, B_bb, AoI, m_index)
+            t5=time.time()
+            t45=t5-t4
+            if x[0]> -1000:
+                m_list.append(m_index)
+                bisection_list.append(x)
+                flat_number+=1
+            if flat_number ==action_number:
+                break
+            list_in.pop(node_to_trans)
+        t6=time.time()
+        t63=t6-t3
+        return m_list,bisection_list
     def plot_cost(self):
         import matplotlib.pyplot as plt
         plt.plot(np.arange(len(self.cost_his))*self.training_interval, self.cost_his)
