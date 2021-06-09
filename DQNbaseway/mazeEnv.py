@@ -23,7 +23,7 @@ class Maze(gym.Env):
     def __init__(self):
         self.action_space = spaces.Discrete(4)  # 0全体吸收能量，1-5分别为几个节点吸收能量
         self.observation_space = spaces.Box(np.array([0,0,0,1,0,0,0,1,0,0,0,1]),\
-                                            np.array(([4, 4, 3, 4,4,4,3, 4,4, 4,3,4])), dtype=np.int)
+                                            np.array(([4, 4, 3, 100,4,4,3, 100,4, 4,3,100])), dtype=np.int)
         self.n_actions = self.action_space.n
         self.n_states = self.observation_space.shape[0] # 转态向量维度
         self.state = None
@@ -42,13 +42,13 @@ class Maze(gym.Env):
         fi=[0,0.22314,0.510826,0.91629,1.609]
         B_max = 3 * 10 ** -4
         B_min = 0
-        A_max: int = 4
+        A_max: int = 100
         h = []  # 上行链路信道增益
         g = []  # 下行链路信道增益
         BEnergy = []  # 电池能量
         AoI = []
         sigma = 3.162277660168375 * 10 ** (-13)
-        S = 15
+        S = 19
         AverSumAoI = 0  # Sum of AoI at base station
         theta = []  # never used 权重
         eta = 0.5  # gain loss

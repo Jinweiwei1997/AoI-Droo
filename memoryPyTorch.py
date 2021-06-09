@@ -106,7 +106,6 @@ class MemoryDNN:
         optimizer.zero_grad()
         predict = self.model(h_train)
         loss = criterion(predict, m_train)
-
         loss.backward()
         optimizer.step()
 
@@ -209,7 +208,7 @@ class MemoryDNN:
     def chooseAction1(self, h,g,BEnergy,AoI,k):
         m_list=[]
         bisection_list=[]
-        action_number=int(5)
+        action_number=int(3)
         t0=time.time()
         self.model.eval()
         temp = torch.Tensor([np.hstack((h, g, BEnergy, AoI))])
@@ -246,13 +245,13 @@ class MemoryDNN:
             x=bisection(h / 10000, g / 10000, B_bb, AoI, m_index)
             t5=time.time()
             t45=t5-t4
-            if x[0]> -1000:
+            if x[0] != -1000000000000000.01:
                 m_list.append(m_index)
                 bisection_list.append(x)
                 flat_number+=1
+            list_in[node_to_trans]=0
             if flat_number ==action_number:
                 break
-            list_in.pop(node_to_trans)
         t6=time.time()
         t63=t6-t3
         return m_list,bisection_list

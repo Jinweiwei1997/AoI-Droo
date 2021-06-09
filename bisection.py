@@ -1,6 +1,6 @@
 
 
-def bisection(h,g,BEnergy,AoI,M, v1=1,v2=1):
+def bisection(h,g,BEnergy,AoI,M, v1=0,v2=1):
     #AoISum The average sum of processes at base station
     V=1 #Lyapnov drift value
     flat=1 #define H or T
@@ -63,7 +63,7 @@ def bisection(h,g,BEnergy,AoI,M, v1=1,v2=1):
                 if (BEnergy_k[i - 1] > EnergyTrans):
                     BEnergy_k[i - 1] -= EnergyTrans
                 else:
-                    return -1000000000.01, BEnergy
+                    return -1000000000000000.01, BEnergy
 
 
 

@@ -94,7 +94,7 @@ if __name__ == "__main__":
     '''
 
     N = 3                       # number of users
-    n = 10                    # number of time frames
+    n = 100                    # number of time frames
     K = N                        # initialize K = N
     decoder_mode = 'OP'          # the quantization mode could be 'OP' (Order-preserving) or 'KNN'
     Memory = 1024                # capacity of memory structure
@@ -217,7 +217,7 @@ if __name__ == "__main__":
     AoI_t = [1 for x in range(N)]
     BEnergy_t = [0.0002 for x in range(N)]
     pl_AoI = []
-    Amax = 4
+    Amax = 100000
     Bmax = 0.0003
     sigma = 3.162277660168375 * 10 ** (-13)
     S = 15
@@ -298,6 +298,7 @@ if __name__ == "__main__":
         T2=time.time()
     Tend =time.time()
     print("Aoi:", FinalAoI)
+    save_to_txt(pl_AoI,"DieLy")
     save_to_txt(AoI_text, "AoI_text")
     print("number", number)
     print("Time:",Tend-Tstart)

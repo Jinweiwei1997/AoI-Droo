@@ -15,7 +15,7 @@ class DQN():
                  dim_state,
                  n_actions,
                  batch_size=32,
-                 learning_rate=0.001,
+                 learning_rate=0.01,
                  epsilon=0.9,
                  gamma=0.9,
                  training_interval=10,
@@ -136,10 +136,10 @@ if __name__ == '__main__':
     #print(dqn)
 
     print('Collecting experience...')
-    for i_episode in range(200):
+    for i_episode in range(100):
         s = env.reset()                 # 重置初始状态
         ep_r = 0
-        for i in range(300):
+        for i in range(50):
             #env.render()                # 刷新画面
             aoi=[]
             a = dqn.choose_action(s)    # 选择动作
@@ -185,6 +185,12 @@ if __name__ == '__main__':
     dqn_aoi =[]
     dqn_AverAoI=0
     x=0
+    DQNEner1=[]
+    DQNEner2=[]
+    DQNEner3=[]
+    DQNAoI1=[]
+    DQNAoI2=[]
+    DQNAoI3=[]
     env.state=s
     dqn_LongTime=[]
     for i_episode in range(3000):
@@ -200,8 +206,20 @@ if __name__ == '__main__':
         dqn_AverAoI = (dqn_AverAoI*i_episode+r)/(i_episode+1)
         dqn_LongTime.append(-dqn_AverAoI)
         s=s_
+        DQNAoI1.append(s[3])
+        DQNAoI2.append(s[7])
+        DQNAoI3.append(s[11])
+        DQNEner1.append(s[2]*0.0001)
+        DQNEner2.append(s[6]*0.0001)
+        DQNEner3.append(s[10]*0.0001)
     print(-dqn_AverAoI)
     print(x)
+    save_to_txt(DQNAoI1,"DQNAoI1")
+    save_to_txt(DQNAoI2,"DQNAoI2")
+    save_to_txt(DQNAoI3,"DQNAoI3")
+    save_to_txt(DQNEner1,"DQNEner1")
+    save_to_txt(DQNEner2,"DQNEner2")
+    save_to_txt(DQNEner3,"DQNEner3")
     save_to_txt(dqn_aoi, "dqn_aoi")
     save_to_txt(dqn_LongTime,"dqn_LongTime")
     plot_rate(dqn_LongTime)

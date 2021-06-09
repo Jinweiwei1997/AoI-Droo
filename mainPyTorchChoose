@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     Action = []
     mem = MemoryDNN(net=[4 * N, 120, 80, N + 1],
-                    learning_rate=0.01,
+                    learning_rate=0.005,
                     training_interval=10,
                     batch_size=128,
                     memory_size=Memory
@@ -231,7 +231,13 @@ if __name__ == "__main__":
     AoI_t = [1 for x in range(N)]
     BEnergy_t = [0.0002 for x in range(N)]
     pl_AoI = []
-    Amax = 4
+    EveryAoI1=[]
+    EveryAoI2 = []
+    EveryAoI3 = []
+    EveryEner1 = []
+    EveryEner2 = []
+    EveryEner3 = []
+    Amax = 1000000
     Bmax = 0.0003
     sigma = 3.162277660168375 * 10 ** (-13)
     S = 15
@@ -259,11 +265,23 @@ if __name__ == "__main__":
             r_list1.append(bi_list1[j][0])
         # encode the mode with largest reward
         LyaDrift, AverSumAoI,BEnergy_t, AoI_t = bi_list1[np.argmax(r_list1)]
-        AssertionError(AverSumAoI>1 and AverSumAoI<=4)
+        AssertionError(AverSumAoI>100)
         FinalAoI = (FinalAoI * i + AverSumAoI) / (i + 1)
         pl_AoI.append(FinalAoI)
+        EveryAoI1.append(AoI_t[0])
+        EveryAoI2.append(AoI_t[1])
+        EveryAoI3.append(AoI_t[2])
+        EveryEner1.append(BEnergy_t[0])
+        EveryEner2.append(BEnergy_t[1])
+        EveryEner3.append(BEnergy_t[2])
     Tend = time.time()
     print("Aoi:", FinalAoI)
+    save_to_txt(EveryAoI1,"LYDROOAoI1")
+    save_to_txt(EveryAoI2, "LYDROOAoI2")
+    save_to_txt(EveryAoI3, "LYDROOAoI3")
+    save_to_txt(EveryEner1,"LYDROOEner1")
+    save_to_txt(EveryEner2,"LyDROOEner2")
+    save_to_txt(EveryEner3, "LyDROOEner3")
     save_to_txt(AoI_text, "AoI_text")
     save_to_txt(pl_AoI,"Cpl_AoI")
     print("number", number)
